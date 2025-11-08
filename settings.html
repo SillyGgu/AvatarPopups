@@ -1,0 +1,527 @@
+<div class="extension-block avatar-popups-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b style="color: var(--accent-color);">스티커 팝업 설정</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        
+        <div class="inline-drawer-content" id="avatar-popups-menu-content" style="padding: 20px; background-color: #fefcff; border-radius: 0 0 8px 8px;">
+            <div class="control-group" style="display: flex; gap: 20px;">
+                <label class="flex-container">
+                    <input type="checkbox" id="avatar_popups_enable_toggle">
+                    <span style="font-weight: 500;">스티커 팝업 활성화</span>
+                </label>
+                <label class="flex-container">
+                    <input type="checkbox" id="avatar_popups_ignore_click_toggle">
+                    <span style="font-weight: 500;">팝업 클릭 무시 (드래그 불가)</span>
+                </label>
+                <label class="flex-container">
+                    <input type="checkbox" id="avatar_popups_auto_adjust_toggle">
+                    <span style="font-weight: 500; color: var(--accent-color);">창 크기 변경 시 위치 자동 조정</span>
+                </label>
+            </div>
+            <hr class="sysHR">
+
+            <div class="menu-section">
+                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">팝업 설정: 캐릭터/페르소나</h3>
+                
+                <div class="tab-container" id="avatar-persona-tab-container" style="display: flex; margin-bottom: 15px;">
+                    <div class="tab active" data-target="char-avatar-controls" id="char-tab" 
+                         style="flex: 1; padding: 8px; text-align: center; cursor: pointer; background: #f1f1f1; border-bottom: 2px solid transparent; transition: all 0.3s ease; border-radius: 4px 4px 0 0;">캐릭터 포카</div>
+                    <div class="tab" data-target="persona-avatar-controls" id="persona-tab" 
+                         style="flex: 1; padding: 8px; text-align: center; cursor: pointer; background: #f1f1f1; border-bottom: 2px solid transparent; transition: all 0.3s ease; border-radius: 4px 4px 0 0;">페르소나 포카</div>
+                </div>
+
+                <div id="char-avatar-controls" class="avatar-controls-container active">
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 사이즈 [ W ]x[ H ]px</label>
+                        <div class="input-group" style="display: flex; gap: 10px;">
+                            <input type="number" id="char-width-input" placeholder="너비 (250)" class="avatar-config-input" data-type="char" data-key="width" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                            <input type="number" id="char-height-input" placeholder="높이 (350)" class="avatar-config-input" data-type="char" data-key="height" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 형태</label>
+                        <select id="char-shape-select" class="avatar-config-input" data-type="char" data-key="shape" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                            <option value="square">사각형 (기본)</option>
+                            <option value="diamond">마름모</option>
+                            <option value="circle">동그라미</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">회전각 (°)</label>
+                        <input type="number" id="char-rotation-input" placeholder="0" class="avatar-config-input" data-type="char" data-key="rotation" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업틀 이미지 덮어씌우기 (링크)</label>
+                        <input type="text" id="char-image-override-input" placeholder="https://..." class="avatar-config-input" data-type="char" data-key="imageOverride" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                    </div>
+                </div>
+
+                <div id="persona-avatar-controls" class="avatar-controls-container" style="display: none;">
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 사이즈 [ W ]x[ H ]px</label>
+                        <div class="input-group" style="display: flex; gap: 10px;">
+                            <input type="number" id="persona-width-input" placeholder="너비 (250)" class="avatar-config-input" data-type="persona" data-key="width" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                            <input type="number" id="persona-height-input" placeholder="높이 (350)" class="avatar-config-input" data-type="persona" data-key="height" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 형태</label>
+                        <select id="persona-shape-select" class="avatar-config-input" data-type="persona" data-key="shape" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                            <option value="square">사각형 (기본)</option>
+                            <option value="diamond">마름모</option>
+                            <option value="circle">동그라미</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">회전각 (°)</label>
+                        <input type="number" id="persona-rotation-input" placeholder="0" class="avatar-config-input" data-type="persona" data-key="rotation" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업틀 이미지 덮어씌우기 (링크)</label>
+                        <input type="text" id="persona-image-override-input" placeholder="https://..." class="avatar-config-input" data-type="persona" data-key="imageOverride" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                    </div>
+                </div>
+                
+                </div>
+
+            <hr class="sysHR">
+
+            <div class="menu-section">
+                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">팝업 추가 (스티커)</h3>
+
+                <div class="control-group">
+                    <button id="toggle-add-sticker-input-btn" style="width: 100%; padding: 10px; background-color: var(--secondary-color); color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">새 스티커 팝업 저장 및 추가</button>
+                </div>
+
+                <div id="add-sticker-input-popup" style="margin-top: 15px; padding: 15px; border: 1px dashed var(--accent-color); border-radius: 8px; background-color: #fff9fc; display: none;">
+                    <h4 style="font-size: 0.95rem; font-weight: 500; margin-bottom: 10px; color: var(--accent-color);">⭐ 새 스티커 정보 입력</h4>
+                    <div class="control-group">
+                        <label for="sticker-name-input" style="display: block; font-size: 0.9rem; margin-bottom: 5px;">스티커 이름 (목록 표시용)</label>
+                        <input type="text" id="sticker-name-input" placeholder="예: '다꾸 토끼'" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                    </div>
+                    <div class="control-group">
+                        <label for="sticker-image-link-input" style="display: block; font-size: 0.9rem; margin-bottom: 5px;">이미지 링크 삽입 (배경 투명화된 이미지)</label>
+                        <input type="text" id="sticker-image-link-input" placeholder="https://..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                    </div>
+                    <button id="save-new-sticker-btn" style="width: 100%; padding: 10px; background-color: var(--accent-color); color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s; margin-top: 10px;">저장 및 목록에 추가</button>
+                </div>
+                
+                <h4 style="font-size: 0.9rem; font-weight: 500; margin-top: 20px; margin-bottom: 10px; color: var(--secondary-color);">⭐ 목록 (더블 클릭: 영구 삭제, 단일 클릭: 이름/링크 수정)</h4>
+
+                <div class="control-group" style="margin-bottom: 10px;">
+                    <input type="text" id="sticker-search-input" placeholder="스티커 이름으로 검색..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
+                </div>
+
+                <div id="sticker-list-container-settings">
+                    <div id="sticker-list-placeholder" style="font-size: 0.8rem; color: #999; display: flex; align-items: center;">저장된 스티커가 없습니다.</div>
+                </div>
+
+                <div style="font-size: 0.85rem; color: var(--accent-color); margin-top: 10px;">총 저장된 스티커: <span id="sticker-count-display">0</span>개</div>
+            </div> <hr class="sysHR">
+
+            <div class="menu-section" id="additional-features-section">
+                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">추가 기능</h3>
+                
+                <div class="control-group" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <label class="flex-container">
+                        <input type="checkbox" id="avatar_popups_ignore_char_click_toggle">
+                        <span style="font-weight: 500; color: var(--color-accent);">포카만 클릭 무시</span>
+                    </label>
+                    <label class="flex-container">
+                        <input type="checkbox" id="avatar_popups_ignore_sticker_click_toggle">
+                        <span style="font-weight: 500; color: var(--color-accent);">스티커만 클릭 무시</span>
+                    </label>
+					<label class="flex-container">
+						<input type="checkbox" id="avatar_popups_floating_toggle">
+						<span style="font-weight: 500; color: var(--secondary-color);">플로팅 포카</span>
+					</label>
+                </div>
+
+                <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">*팝업 클릭 무시'가 켜져 있으면, 이곳의 클릭 설정들은 무시됩니다.</p>
+            </div>
+            <hr class="sysHR">
+
+            <div class="menu-section">
+                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">프리셋 기능 (스티커 & 아바타 설정)</h3>
+                
+                <div class="control-group">
+                    <input type="text" id="preset-name-input" placeholder="새 프리셋 이름 입력" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px;">
+                    <button id="save-preset-btn" style="width: 100%; padding: 10px; background-color: #F48FB1; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s; margin-bottom: 15px;">현재 설정 프리셋으로 저장</button>
+                </div>
+
+                <div class="control-group">
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">프리셋 목록</label>
+                    <select id="preset-select-dropdown" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px; font-family: inherit;">
+                        <option value="" data-preset="none" disabled selected>저장된 프리셋을 선택하세요...</option>
+                        </select>
+                    
+                    <div class="input-group" style="display: flex; gap: 10px;">
+                        <button id="load-preset-btn" style="flex: 1; padding: 10px; background-color: #EC407A; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;" disabled>프리셋 불러오기</button>
+                        <button id="delete-preset-btn" style="flex: 1; padding: 10px; background-color: #E0E0E0; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;" disabled>프리셋 삭제</button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+
+.avatar-popups-settings .inline-drawer-toggle b {
+    position: relative;
+    padding-right: 20px; 
+    color: var(--accent-color, #EC407A);
+    font-weight: 600;
+}
+
+
+.avatar-popups-settings .inline-drawer-toggle b::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;       
+    height: 22px;     
+    background-color: #FF8A80; 
+    border-radius: 4px;        
+}
+
+
+.avatar-popups-settings .menu-section h3 {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    color: var(--secondary-color, #666); 
+    position: relative;
+    padding-right: 15px;
+}
+.avatar-popups-settings .menu-section h3::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;  
+    height: 20px;
+    background-color: var(--accent-color, #EC407A); 
+    border-radius: 3px; 
+}
+
+.avatar-popups-settings .inline-drawer-content {
+    background-color: #ffffff; 
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+    padding: 20px;
+}
+.avatar-popups-settings .tab {
+    transition: all 0.2s ease;
+    border-radius: 4px 4px 0 0;
+}
+.avatar-popups-settings .tab.active {
+    background: var(--white-color, #FFFFFF) !important; 
+    border-color: var(--accent-color, #EC407A) !important; 
+    font-weight: 500;
+}
+.avatar-popups-settings .avatar-controls-container {
+    display: none; 
+    padding-top: 5px; 
+}
+.avatar-popups-settings .avatar-controls-container.active {
+    display: block; 
+}
+
+
+.avatar-popups-settings button {
+    transition: background-color 0.3s;
+    font-size: 0.9rem !important; 
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+#toggle-add-sticker-input-btn {
+    background-color: var(--secondary-color, #F48FB1) !important;
+    color: var(--white-color, #FFFFFF) !important;
+}
+
+#save-preset-btn {
+    background-color: var(--secondary-color, #F48FB1) !important;
+    color: var(--white-color, #FFFFFF) !important;
+}
+
+
+#sticker-list-container-settings::-webkit-scrollbar {
+    width: 6px;
+}
+#sticker-list-container-settings::-webkit-scrollbar-thumb {
+    background: var(--accent-color, #EC407A);
+    border-radius: 5px;
+}
+
+
+.sticker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 60px; 
+    padding: 5px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+.sticker-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.sticker-item-controls {
+    display: flex;
+    justify-content: center; 
+    gap: 8px; 
+    width: 100%; 
+    margin-top: 5px; 
+}
+.sticker-item-controls button {
+    padding: 5px 8px;
+    font-size: 0.85rem !important;
+    line-height: 1;
+    border-radius: 6px;
+    background-color: var(--accent-color, #EC407A);
+    color: var(--white-color, #FFFFFF);
+    height: 28px;
+    width: 35px; 
+}
+
+.sticker-item-controls button:hover {
+    filter: brightness(0.9);
+}
+
+
+
+
+.avatar-popups-settings {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+    line-height: 1.6;
+    color: #4a4a4a; 
+}
+
+
+.avatar-popups-settings .menu-section {
+    margin-bottom: 35px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--border-color, #e0e0e0);
+}
+
+.avatar-popups-settings h3 {
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 18px !important;
+    color: var(--accent-color, #EC407A) !important;
+    letter-spacing: -0.3px;
+}
+
+.avatar-popups-settings h4 {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: var(--secondary-color, #F48FB1) !important;
+    margin-bottom: 12px !important;
+}
+
+
+.avatar-popups-settings .control-group {
+    margin-bottom: 18px;
+}
+
+
+.avatar-popups-settings label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #4a4a4a; 
+    margin-bottom: 6px;
+}
+
+
+.avatar-popups-settings input[type="text"],
+.avatar-popups-settings input[type="number"],
+.avatar-popups-settings select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color, #d0d0d0);
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #fff;
+    color: #333333; 
+}
+
+.avatar-popups-settings input[type="text"]:focus,
+.avatar-popups-settings input[type="number"]:focus,
+.avatar-popups-settings select:focus {
+    border-color: var(--accent-color, #EC407A);
+    box-shadow: 0 0 0 2px rgba(236, 64, 122, 0.15);
+}
+
+
+.avatar-popups-settings .control-group label.flex-container {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    cursor: pointer;
+}
+
+
+.avatar-popups-settings .tab-container {
+    display: flex;
+    border-bottom: 2px solid var(--border-color, #eee);
+    margin-bottom: 15px;
+}
+
+
+.avatar-popups-settings .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    background: #f6f6f6;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid transparent;
+    transition: all 0.25s ease;
+    font-weight: 500;
+    color: #4a4a4a; 
+}
+
+.avatar-popups-settings .tab.active {
+    background: var(--white-color, #fff);
+    border-color: var(--accent-color, #EC407A);
+    border-bottom-color: #fff;
+    color: var(--accent-color, #EC407A);
+    font-weight: 600;
+}
+
+
+.avatar-popups-settings button {
+    transition: all 0.25s ease;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.avatar-popups-settings button:hover {
+    filter: brightness(0.92);
+}
+
+
+#add-sticker-input-popup {
+    margin-top: 15px;
+    padding: 15px 18px;
+    border: 1px solid var(--accent-color, #EC407A);
+    border-radius: 8px;
+    background-color: #fff9fc;
+    box-shadow: inset 0 0 4px rgba(236, 64, 122, 0.1);
+}
+
+
+.avatar-popups-settings input::placeholder {
+    color: #aaa;
+    font-size: 0.85rem;
+}
+
+
+.avatar-popups-settings .sysHR {
+    border: none;
+    border-top: 1px dashed var(--border-color, #e0e0e0);
+    margin: 25px 0;
+}
+
+
+#sticker-list-container-settings {
+    display: flex;
+    flex-wrap: wrap; 
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    max-height: 350px; 
+    gap: 15px; 
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    align-content: flex-start; 
+    resize: vertical; 
+}
+
+
+#sticker-list-container-settings::-webkit-scrollbar-thumb {
+    background: var(--accent-color, #EC407A);
+    border-radius: 5px;
+}
+
+
+.sticker-item {
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    width: calc(25% - 15px); 
+    min-width: 90px; 
+    height: auto; 
+    padding: 8px;
+    border: 1px solid var(--border-color, #f0f0f0);
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    cursor: pointer; 
+    transition: all 0.2s ease;
+}
+
+.sticker-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.sticker-item-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #4a4a4a; 
+    margin-bottom: 5px;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sticker-item-controls button {
+    background-color: var(--accent-color, #EC407A);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+}
+
+.sticker-item-controls button:hover {
+    filter: brightness(0.9);
+}
+
+
+#preset-select-dropdown + .input-group {
+    margin-top: 5px; 
+}
+</style>
