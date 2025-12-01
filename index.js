@@ -214,40 +214,24 @@ function applyConfigToPopup(type) {
     let rotation = config.rotation || 0;
     
     const imgConfig = config.imageAdjust || { x: 0, y: 0, zoom: 1, rotation: 0 };
-    
-    
-    const posX = 50 + (imgConfig.x ?? 0); 
-    
-    const posY = 50; 
-
-    console.log(`applyConfigToPopup: type=${type}, posX=${posX}, posY=${posY}, imgConfig.x=${imgConfig.x}, imgConfig.y=${imgConfig.y}`);
 
     const imgZoom = imgConfig.zoom || 1;
     const imgInnerRotation = imgConfig.rotation || 0;
     
-    
     let imgTransformString = `scale(${imgZoom}) rotate(${imgInnerRotation}deg)`;
-
+    $img.css('transform', imgTransformString); 
     
-    if (config.shape === 'diamond') {
-        rotation = parseInt(config.rotation) || 0; 
-        $img.css('transform', imgTransformString); 
-    } else {
-        rotation = parseInt(config.rotation) || 0;
-        $img.css('transform', imgTransformString); 
-    }
+    console.log(`Setting object-position: 50% 50%`);
+    $img.css('object-position', `50% 50%`); 
     
     
-    
-    console.log(`Setting object-position: ${posX}% 50%`);
-
-    $img.css('object-position', `${posX}% 50%`); 
-    
+    const marginLeftValue = imgConfig.x ?? 0; 
+    console.log(`Setting margin-left: ${marginLeftValue}px`);
+    $img.css('margin-left', `${marginLeftValue}px`); 
     
     
     const marginTopValue = imgConfig.y ?? 0;
     console.log(`Setting margin-top: ${marginTopValue}px`);
-    
     $img.css('margin-top', `${marginTopValue}px`); 
 
     
@@ -419,6 +403,7 @@ function renderActiveStickers() {
     
     
     toggleClickIgnore(settings.ignoreClick);
+    togglePopups(settings.enabled);
 }
 
 
@@ -1261,41 +1246,34 @@ function createAvatarConfigPanel() {
         function() { $(this).css('background-color', '#e0e0e0'); },
         function() { $(this).css('background-color', '#f0f0f0'); }
     );
-    $('#avatar-config-panel').on('click', '.dpad-btn', function() {
-        if (!currentEditingAvatarType) return;
-        
-        const $btn = $(this);
-        const axis = $btn.data('axis'); 
-        const dataVal = parseInt($btn.data('val')); 
-        
-        
-        const stepPercent = parseInt($('#avatar-adjust-dpad-step').val()); 
-        
-        let currentValue = settings[`${currentEditingAvatarType}Config`].imageAdjust[axis] || 0;
-        
-        
-        if (axis === 'y') {
-            
-            
-            const stepPx = 10; 
-            currentValue += dataVal * stepPx;
-            
-        } else if (axis === 'x') {
-            
-            currentValue += dataVal * stepPercent;
-            
-            
-            if (currentValue < -50) currentValue = -50;
-            if (currentValue > 50) currentValue = 50;
-        }
+	$('#avatar-config-panel').on('click', '.dpad-btn', function() {
+		if (!currentEditingAvatarType) return;
+		const $btn = $(this);
+		const axis = $btn.data('axis');
+		const dir = parseInt($btn.data('val'));
+		
+		// 이동량 설정값 가져오기 (기본값 5)
+		const step = parseInt($('#avatar-adjust-dpad-step').val()) || 5; 
+		
+		// 현재 설정 가져오기
+		let config = settings[`${currentEditingAvatarType}Config`];
+		if (!config.imageAdjust) {
+			config.imageAdjust = { x: 0, y: 0, zoom: 1, rotation: 0 };
+		}
+		
+		let currentVal = config.imageAdjust[axis] || 0;
 
-        
-        settings[`${currentEditingAvatarType}Config`].imageAdjust[axis] = currentValue;
-
-        
-        applyConfigToPopup(currentEditingAvatarType);
-        saveSettingsDebounced();
-    });
+		if (axis === 'y') {
+			currentVal += dir * step * 2; 
+		} else if (axis === 'x') {
+			currentVal += dir * step * 2; // Y축과 동일한 체감을 위해 step * 2 적용
+		}
+		
+		// 값 저장 및 적용
+		settings[`${currentEditingAvatarType}Config`].imageAdjust[axis] = currentVal; 
+		applyConfigToPopup(currentEditingAvatarType); 
+		saveSettingsDebounced();
+	});
 }
 
 
