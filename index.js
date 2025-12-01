@@ -214,27 +214,31 @@ function applyConfigToPopup(type) {
     let rotation = config.rotation || 0;
     
     const imgConfig = config.imageAdjust || { x: 0, y: 0, zoom: 1, rotation: 0 };
-
     const imgZoom = imgConfig.zoom || 1;
     const imgInnerRotation = imgConfig.rotation || 0;
+    const moveX = imgConfig.x ?? 0;
+    const moveY = imgConfig.y ?? 0;
     
-    let imgTransformString = `scale(${imgZoom}) rotate(${imgInnerRotation}deg)`;
+    // [수정됨] 마진 대신 translate를 사용하여 이동, 확대, 회전을 한 번에 처리합니다.
+    // 순서: 이동(translate) -> 확대(scale) -> 회전(rotate)
+    let imgTransformString = `translate(${moveX}px, ${moveY}px) scale(${imgZoom}) rotate(${imgInnerRotation}deg)`;
+
+    // shape 설정에 따라 부모 div 회전
+    if (config.shape === 'diamond') {
+        rotation = parseInt(config.rotation) || 0; 
+    } else {
+        rotation = parseInt(config.rotation) || 0;
+    }
+
+    // 이미지에 transform 적용
     $img.css('transform', imgTransformString); 
     
-    console.log(`Setting object-position: 50% 50%`);
-    $img.css('object-position', `50% 50%`); 
-    
-    
-    const marginLeftValue = imgConfig.x ?? 0; 
-    console.log(`Setting margin-left: ${marginLeftValue}px`);
-    $img.css('margin-left', `${marginLeftValue}px`); 
-    
-    
-    const marginTopValue = imgConfig.y ?? 0;
-    console.log(`Setting margin-top: ${marginTopValue}px`);
-    $img.css('margin-top', `${marginTopValue}px`); 
+    // 중요: 기존의 마진 이동 방식이 충돌하지 않도록 0으로 초기화합니다.
+    $img.css('object-position', `50% 50%`);
+    $img.css('margin-left', '0px'); 
+    $img.css('margin-top', '0px'); 
 
-    
+    // 팝업 박스 자체의 크기와 회전 설정
     $popup.css({
         width: `${config.width}px`,
         height: `${config.height}px`,
@@ -1168,37 +1172,7 @@ function createAvatarConfigPanel() {
     
     $('#close-avatar-config-btn').on('click', hideAvatarConfigPanel);
     
-	
-	$('.dpad-container').on('click', '.dpad-btn', function() {
-		if (!currentEditingAvatarType) return;
 
-		const $btn = $(this);
-		const axis = $btn.data('axis'); 
-		const dir = parseInt($btn.data('val')); 
-
-		console.log(`D-pad clicked: axis=${axis}, dir=${dir}`); 
-
-		const config = settings[`${currentEditingAvatarType}Config`];
-		const imageAdjust = config.imageAdjust || { x: 0, y: 0, zoom: 1, rotation: 0 };
-
-		console.log(`Before update: x=${imageAdjust.x}, y=${imageAdjust.y}`); 
-
-		
-		const step = parseInt($('#avatar-adjust-dpad-step').val()) || 5; 
-
-		
-		let newVal = imageAdjust[axis] + dir * step; 
-		
-		
-		newVal = Math.max(-50, Math.min(50, newVal)); 
-		
-		imageAdjust[axis] = newVal; 
-
-		console.log(`After update: x=${imageAdjust.x}, y=${imageAdjust.y}`); 
-
-		applyConfigToPopup(currentEditingAvatarType);
-		saveSettingsDebounced();
-	});
 	
     
     $('.avatar-adjust-input').on('input', function() {
@@ -1249,11 +1223,11 @@ function createAvatarConfigPanel() {
 	$('#avatar-config-panel').on('click', '.dpad-btn', function() {
 		if (!currentEditingAvatarType) return;
 		const $btn = $(this);
-		const axis = $btn.data('axis');
-		const dir = parseInt($btn.data('val'));
+		const axis = $btn.data('axis'); // 'x' 또는 'y'
+		const dir = parseInt($btn.data('val')); // -1 (상/좌) 또는 1 (하/우)
 		
-		// 이동량 설정값 가져오기 (기본값 5)
-		const step = parseInt($('#avatar-adjust-dpad-step').val()) || 5; 
+		// 이동량 설정값 가져오기 (기본값 5. 픽셀 조정을 위해 * 2)
+		const step = (parseInt($('#avatar-adjust-dpad-step').val()) || 5) * 2; 
 		
 		// 현재 설정 가져오기
 		let config = settings[`${currentEditingAvatarType}Config`];
@@ -1261,15 +1235,15 @@ function createAvatarConfigPanel() {
 			config.imageAdjust = { x: 0, y: 0, zoom: 1, rotation: 0 };
 		}
 		
-		let currentVal = config.imageAdjust[axis] || 0;
-
-		if (axis === 'y') {
-			currentVal += dir * step * 2; 
-		} else if (axis === 'x') {
-			currentVal += dir * step * 2; // Y축과 동일한 체감을 위해 step * 2 적용
+		let currentVal = config.imageAdjust[axis] || 0; // x 또는 y 값
+		
+        // X축 (좌우) 또는 Y축 (상하) 값만 변경합니다.
+		if (axis === 'y' || axis === 'x') {
+			currentVal += dir * step; 
 		}
 		
-		// 값 저장 및 적용
+		// 값 저장 및 적용 (축에 해당하는 값만 변경합니다)
+        // 이 로직은 imageAdjust.zoom 값을 건드리지 않습니다.
 		settings[`${currentEditingAvatarType}Config`].imageAdjust[axis] = currentVal; 
 		applyConfigToPopup(currentEditingAvatarType); 
 		saveSettingsDebounced();
