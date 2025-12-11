@@ -1,3 +1,8 @@
+12.12 업데이트 사항
+
+- 포카 플로팅 상태에서 회전각이 안되던 오류 수정 -> 포카 회전각 정상 작동
+
+
 
 12.11 업데이트 사항
 <img width="715" height="123" alt="image" src="https://github.com/user-attachments/assets/22163d40-aae2-4653-bcfc-f48d1a73d2b7" />
