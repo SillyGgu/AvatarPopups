@@ -37,6 +37,10 @@ let isAvatarDragging = false;
 
 const DEFAULT_SETTINGS = {
     enabled: true,
+    
+    charEnabled: true,
+    personaEnabled: true,
+
     ignoreClick: false, 
     autoPosAdjust: false, 
     isFloating: false, 
@@ -219,33 +223,27 @@ function applyConfigToPopup(type) {
     const moveX = imgConfig.x ?? 0;
     const moveY = imgConfig.y ?? 0;
     
-    // [수정됨] 마진 대신 translate를 사용하여 이동, 확대, 회전을 한 번에 처리합니다.
-    // 순서: 이동(translate) -> 확대(scale) -> 회전(rotate)
     let imgTransformString = `translate(${moveX}px, ${moveY}px) scale(${imgZoom}) rotate(${imgInnerRotation}deg)`;
 
-    // shape 설정에 따라 부모 div 회전
     if (config.shape === 'diamond') {
         rotation = parseInt(config.rotation) || 0; 
     } else {
         rotation = parseInt(config.rotation) || 0;
     }
 
-    // 이미지에 transform 적용
     $img.css('transform', imgTransformString); 
     
-    // 중요: 기존의 마진 이동 방식이 충돌하지 않도록 0으로 초기화합니다.
     $img.css('object-position', `50% 50%`);
     $img.css('margin-left', '0px'); 
     $img.css('margin-top', '0px'); 
 
-    // 팝업 박스 자체의 크기와 회전 설정
     $popup.css({
         width: `${config.width}px`,
         height: `${config.height}px`,
         transform: `rotate(${rotation}deg)`
     });
 
-    $popup.removeClass('square diamond circle').addClass(config.shape || 'square');
+    $popup.removeClass('square diamond circle arch').addClass(config.shape || 'square');
 }
 
 
@@ -509,6 +507,9 @@ function loadSettingsUI() {
     $('#avatar_popups_auto_adjust_toggle').prop('checked', settings.autoPosAdjust).on('change', onAutoPosAdjustToggle);
     $('#avatar_popups_floating_toggle').prop('checked', settings.isFloating).on('change', onFloatToggle);
     
+    $('#char-enabled-toggle').prop('checked', settings.charEnabled !== false).on('change', onCharEnableToggle);
+    $('#persona-enabled-toggle').prop('checked', settings.personaEnabled !== false).on('change', onPersonaEnableToggle);
+
     if (settings.autoPosAdjust) {
         startAutoPosAdjustment();
     } else {
@@ -730,6 +731,20 @@ function onFloatToggle(event) {
     const value = Boolean($(event.target).prop('checked'));
     settings.isFloating = value;
     toggleFloating(value); 
+    saveSettingsDebounced();
+}
+
+function onCharEnableToggle(event) {
+    const value = Boolean($(event.target).prop('checked'));
+    settings.charEnabled = value;
+    togglePopups(settings.enabled); // 상태 갱신
+    saveSettingsDebounced();
+}
+
+function onPersonaEnableToggle(event) {
+    const value = Boolean($(event.target).prop('checked'));
+    settings.personaEnabled = value;
+    togglePopups(settings.enabled); // 상태 갱신
     saveSettingsDebounced();
 }
 
@@ -1346,14 +1361,18 @@ function onLoadPreset() {
     if (!presetName || !settings.presets[presetName]) return;
     
     const preset = settings.presets[presetName];
-
     
     settings.charPos = JSON.parse(JSON.stringify(preset.charPos));
     settings.personaPos = JSON.parse(JSON.stringify(preset.personaPos));
     
-    settings.charConfig = JSON.parse(JSON.stringify(preset.charConfig));
-    settings.personaConfig = JSON.parse(JSON.stringify(preset.personaConfig));
-    settings.activeStickers = JSON.parse(JSON.stringify(preset.activeStickers));
+    settings.charConfig = Object.assign({}, DEFAULT_SETTINGS.charConfig, preset.charConfig);
+    settings.personaConfig = Object.assign({}, DEFAULT_SETTINGS.personaConfig, preset.personaConfig);
+    
+    if (preset.activeStickers) {
+        settings.activeStickers = JSON.parse(JSON.stringify(preset.activeStickers));
+    } else {
+        settings.activeStickers = [];
+    }
     
     
     loadSettingsUI(); 
@@ -1375,6 +1394,48 @@ function onDeletePreset() {
     }
 }
 
+function onResetPositions() {
+    if (!confirm('현재 화면에 부착된 모든 스티커를 제거하고, 캐릭터/페르소나 팝업 위치를 화면 중앙으로 초기화하시겠습니까?')) {
+        return;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // 1. 캐릭터 팝업 중앙 정렬
+    const charWidth = settings.charConfig.width || 250;
+    const charHeight = settings.charConfig.height || 350;
+    
+    settings.charPos = {
+        top: (viewportHeight / 2) - (charHeight / 2),
+        left: (viewportWidth / 2) - (charWidth / 2)
+    };
+
+    // 2. 페르소나 팝업 중앙 정렬 (약간 오른쪽으로 엇갈리게 하려면 left에 값을 더해도 됨. 여기선 정중앙 겹침 방지를 위해 약간 오프셋)
+    const personaWidth = settings.personaConfig.width || 250;
+    const personaHeight = settings.personaConfig.height || 350;
+
+    settings.personaPos = {
+        top: (viewportHeight / 2) - (personaHeight / 2),
+        left: (viewportWidth / 2) - (personaWidth / 2) + 20 // 20px 살짝 어긋나게
+    };
+
+    // 3. 화면의 스티커 모두 제거 (데이터에서도 삭제)
+    settings.activeStickers = [];
+    $('.sticker-popup').remove();
+    hideStickerConfigPanel();
+
+    // 4. 적용
+    applyPosToPopup('char');
+    applyPosToPopup('persona');
+    
+    // 기준 뷰포트도 갱신
+    settings.initialViewport = { width: viewportWidth, height: viewportHeight };
+
+    alert('초기화되었습니다.');
+    saveSettingsDebounced();
+}
+
 function updatePresetButtons() {
     const selected = $('#preset-select-dropdown').val();
     const isDisabled = !selected || selected === '기본 설정';
@@ -1386,12 +1447,31 @@ function updatePresetButtons() {
 
 
 function togglePopups(isEnabled) {
-    const displayStyle = isEnabled ? '' : 'none';
-    $('#char-avatar-popup').css('display', displayStyle);
-    $('#persona-avatar-popup').css('display', displayStyle);
+    // 1. 전체 기능이 꺼져있으면 모두 숨김
+    if (!isEnabled) {
+        $('#char-avatar-popup').css('display', 'none');
+        $('#persona-avatar-popup').css('display', 'none');
+        $('.sticker-popup').css('display', 'none');
+        return;
+    }
+
+    // 2. 전체 기능이 켜져있다면 개별 설정 확인
+    // 캐릭터 팝업
+    if (settings.charEnabled !== false) { // undefined일 경우(구버전 호환) true로 취급
+        $('#char-avatar-popup').css('display', '');
+    } else {
+        $('#char-avatar-popup').css('display', 'none');
+    }
+
+    // 페르소나 팝업
+    if (settings.personaEnabled !== false) {
+        $('#persona-avatar-popup').css('display', '');
+    } else {
+        $('#persona-avatar-popup').css('display', 'none');
+    }
     
-    
-    $('.sticker-popup').css('display', displayStyle);
+    // 스티커는 전체 설정(isEnabled)을 따름
+    $('.sticker-popup').css('display', '');
 }
 
 
@@ -1512,7 +1592,7 @@ jQuery(async () => {
         
         $('#save-preset-btn').on('click', onSavePreset);
         
-        
+        $('#reset-positions-btn').on('click', onResetPositions);
         $('#save-preset-btn').on('click', onSavePreset);
         $('#load-preset-btn').on('click', onLoadPreset);
         $('#delete-preset-btn').on('click', onDeletePreset);

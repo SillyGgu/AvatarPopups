@@ -7,18 +7,20 @@
         
         <div class="inline-drawer-content" id="avatar-popups-menu-content" style="padding: 20px; background-color: #fefcff; border-radius: 0 0 8px 8px;">
             <div class="control-group" style="display: flex; gap: 20px;">
-                <label class="flex-container">
-                    <input type="checkbox" id="avatar_popups_enable_toggle">
-                    <span style="font-weight: 500;">스티커 팝업 활성화</span>
-                </label>
-                <label class="flex-container">
-                    <input type="checkbox" id="avatar_popups_ignore_click_toggle">
-                    <span style="font-weight: 500;">팝업 클릭 무시 (드래그 불가)</span>
-                </label>
-                <label class="flex-container">
-                    <input type="checkbox" id="avatar_popups_auto_adjust_toggle">
-                    <span style="font-weight: 500; color: var(--accent-color);">창 크기 변경 시 위치 자동 조정</span>
-                </label>
+				<label class="flex-container">
+					<input type="checkbox" id="avatar_popups_enable_toggle">
+					<span>스티커 팝업 활성화</span>
+				</label>
+
+				<label class="flex-container">
+					<input type="checkbox" id="avatar_popups_ignore_click_toggle">
+					<span>팝업 클릭 무시 (드래그 불가)</span>
+				</label>
+
+				<label class="flex-container">
+					<input type="checkbox" id="avatar_popups_auto_adjust_toggle">
+					<span style="color: var(--accent-color);">창 크기 변경 시 위치 자동 조정</span>
+				</label>
             </div>
             <hr class="sysHR">
 
@@ -33,6 +35,13 @@
                 </div>
 
                 <div id="char-avatar-controls" class="avatar-controls-container active">
+                    <div class="control-group" style="margin-bottom: 10px;">
+						<label class="flex-container">
+							<input type="checkbox" id="char-enabled-toggle">
+							<span style="color: var(--accent-color);">이 포카 표시하기</span>
+						</label>
+                    </div>
+
                     <div class="control-group">
                         <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 사이즈 [ W ]x[ H ]px</label>
                         <div class="input-group" style="display: flex; gap: 10px;">
@@ -47,6 +56,7 @@
                             <option value="square">사각형 (기본)</option>
                             <option value="diamond">마름모</option>
                             <option value="circle">동그라미</option>
+                            <option value="arch">아치형 (창문)</option>
                         </select>
                     </div>
 
@@ -62,6 +72,13 @@
                 </div>
 
                 <div id="persona-avatar-controls" class="avatar-controls-container" style="display: none;">
+                    <div class="control-group" style="margin-bottom: 10px;">
+						<label class="flex-container">
+							<input type="checkbox" id="persona-enabled-toggle">
+							<span style="color: var(--accent-color);">이 포카 표시하기</span>
+						</label>
+                    </div>
+
                     <div class="control-group">
                         <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 사이즈 [ W ]x[ H ]px</label>
                         <div class="input-group" style="display: flex; gap: 10px;">
@@ -76,6 +93,7 @@
                             <option value="square">사각형 (기본)</option>
                             <option value="diamond">마름모</option>
                             <option value="circle">동그라미</option>
+                            <option value="arch">아치형 (창문)</option>
                         </select>
                     </div>
 
@@ -131,22 +149,30 @@
                 <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">추가 기능</h3>
                 
                 <div class="control-group" style="display: flex; gap: 20px; flex-wrap: wrap;">
-                    <label class="flex-container">
-                        <input type="checkbox" id="avatar_popups_ignore_char_click_toggle">
-                        <span style="font-weight: 500; color: var(--color-accent);">포카만 클릭 무시</span>
-                    </label>
-                    <label class="flex-container">
-                        <input type="checkbox" id="avatar_popups_ignore_sticker_click_toggle">
-                        <span style="font-weight: 500; color: var(--color-accent);">스티커만 클릭 무시</span>
-                    </label>
+					<label class="flex-container">
+						<input type="checkbox" id="avatar_popups_ignore_char_click_toggle">
+						<span style="color: var(--color-accent);">포카만 클릭 무시</span>
+					</label>
+
+					<label class="flex-container">
+						<input type="checkbox" id="avatar_popups_ignore_sticker_click_toggle">
+						<span style="color: var(--color-accent);">스티커만 클릭 무시</span>
+					</label>
+
 					<label class="flex-container">
 						<input type="checkbox" id="avatar_popups_floating_toggle">
-						<span style="font-weight: 500; color: var(--secondary-color);">플로팅 포카</span>
+						<span style="color: var(--secondary-color);">플로팅 포카</span>
 					</label>
                 </div>
-
                 <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">*팝업 클릭 무시'가 켜져 있으면, 이곳의 클릭 설정들은 무시됩니다.</p>
+                <div class="control-group" style="margin-top: 15px;">
+                    <button id="reset-positions-btn" style="width: 100%; padding: 10px; background-color: #90A4AE; color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">
+                        🔄 화면 정리 및 포카 위치 중앙으로 초기화
+                    </button>
+                    <p style="font-size: 0.75rem; color: #999; margin-top: 5px;">* 현재 화면에 붙은 스티커를 모두 제거하고, 캐릭터/페르소나 팝업을 화면 중앙으로 불러옵니다.</p>
+                </div>
             </div>
+
             <hr class="sysHR">
 
             <div class="menu-section">
@@ -523,5 +549,44 @@
 
 #preset-select-dropdown + .input-group {
     margin-top: 5px; 
+}
+
+.avatar-popups-settings input[type="checkbox"] {
+    appearance: none;
+    width: 42px;
+    height: 22px;
+    background: #ddd;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.avatar-popups-settings input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.avatar-popups-settings input[type="checkbox"]:checked {
+    background: var(--accent-color, #EC407A);
+}
+
+.avatar-popups-settings input[type="checkbox"]:checked::after {
+    transform: translateX(20px);
+}
+
+/* 라벨 정렬 개선 (토글과 텍스트 간격) */
+.avatar-popups-settings label.flex-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
 }
 </style>
