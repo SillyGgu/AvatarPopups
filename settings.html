@@ -195,6 +195,24 @@
                     </div>
                 </div>
             </div>
+			<div class="control-group" style="margin-top: 15px; border-top: 1px dashed #ddd; padding-top: 15px;">
+				<label style="display: block; font-size: 0.9rem; margin-bottom: 8px; color: var(--secondary-color);">📂 프리셋 공유 및 백업</label>
+				
+				<label class="flex-container" style="margin-bottom: 10px;">
+					<input type="checkbox" id="preset-include-links-toggle" checked>
+					<span style="font-size: 0.85rem;">내보낼 때 이미지 링크 포함 (해제 시 이름만 내보냄)</span>
+				</label>
+
+				<div class="input-group" style="display: flex; gap: 10px;">
+					<button id="export-preset-btn" style="flex: 1; padding: 10px; background-color: #7986CB; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;" disabled>
+						현재 프리셋 내보내기 (.json)
+					</button>
+					<button id="import-preset-btn" style="flex: 1; padding: 10px; background-color: #9575CD; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">
+						프리셋 불러오기
+					</button>
+				</div>
+				<input type="file" id="import-preset-file-input" accept=".json" style="display: none;">
+			</div>
             
         </div>
     </div>

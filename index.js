@@ -1388,7 +1388,162 @@ function onDeletePreset() {
         saveSettingsDebounced();
     }
 }
+function onExportPreset() {
+    const presetName = $('#preset-select-dropdown').val();
+    if (!presetName || !settings.presets[presetName]) return;
 
+    const includeLinks = $('#preset-include-links-toggle').is(':checked');
+    const presetData = settings.presets[presetName];
+
+    // 1. 프리셋에 사용된 스티커들의 정의(Definition)를 추출합니다.
+    // 받는 사람에게는 해당 스티커 ID가 없을 수 있으므로, 이름과 링크 정보를 함께 포장해야 합니다.
+    const usedStickerIds = new Set();
+    if (presetData.activeStickers) {
+        presetData.activeStickers.forEach(s => usedStickerIds.add(s.stickerId));
+    }
+
+    const stickerDefinitions = [];
+    usedStickerIds.forEach(id => {
+        const found = settings.savedStickers.find(s => s.id === id);
+        if (found) {
+            stickerDefinitions.push({
+                originalId: id, // 매핑용 임시 ID
+                name: found.name,
+                // 링크 포함 옵션이 꺼져있으면 빈 문자열로 내보냄 (신상 보호)
+                link: includeLinks ? found.link : "" 
+            });
+        }
+    });
+
+    // 2. 내보낼 최종 데이터 구조 생성
+    const exportObject = {
+        meta: {
+            version: "1.0",
+            exportedAt: Date.now(),
+            includeLinks: includeLinks
+        },
+        name: presetName,
+        presetSettings: presetData, // 위치, 크기 등
+        stickers: stickerDefinitions // 스티커 정보 (이름, 링크)
+    };
+
+    // 3. JSON 파일로 다운로드 트리거
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObject, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `AvatarPopups_${presetName}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+// -----------------------------------------------------------------
+// [신규 기능] 프리셋 파일 읽기 및 처리 (Import)
+// -----------------------------------------------------------------
+function onImportPresetFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            processImportedPreset(importedData);
+        } catch (err) {
+            console.error(err);
+            alert('프리셋 파일을 읽는 중 오류가 발생했습니다. 올바른 JSON 파일인지 확인해주세요.');
+        }
+        // input 초기화 (같은 파일 다시 선택 가능하게)
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// -----------------------------------------------------------------
+// [신규 기능] 불러온 데이터 로직 처리 (ID 매핑 및 병합)
+// -----------------------------------------------------------------
+function processImportedPreset(data) {
+    // 유효성 검사
+    if (!data.presetSettings || !data.stickers) {
+        alert('잘못된 프리셋 파일 형식입니다.');
+        return;
+    }
+
+    const newPresetName = prompt("불러온 프리셋의 이름을 지정해주세요:", data.name || "Imported Preset");
+    if (!newPresetName) return; // 취소
+    
+    // 이름 중복 확인
+    if (settings.presets[newPresetName] && !confirm(`[${newPresetName}] 이름의 프리셋이 이미 존재합니다. 덮어쓰시겠습니까?`)) {
+        return;
+    }
+
+    const idMapping = {}; // { 가져온파일의ID : 내컴퓨터의실제ID }
+    const missingStickers = [];
+
+    // 1. 스티커 목록 동기화 (가장 중요한 부분)
+    data.stickers.forEach(importedSticker => {
+        // A. 내 저장소에 같은 '이름'을 가진 스티커가 있는지 찾기
+        let localSticker = settings.savedStickers.find(s => s.name === importedSticker.name);
+
+        if (localSticker) {
+            // [경우 1] 이미 같은 이름의 스티커가 내 목록에 있음 -> 그 ID를 사용
+            idMapping[importedSticker.originalId] = localSticker.id;
+        } else {
+            // [경우 2] 내 목록에 없음
+            if (importedSticker.link && importedSticker.link.trim() !== "") {
+                // 링크가 있으면 -> 새로 생성하여 저장
+                settings.stickerCounter++;
+                const newId = settings.stickerCounter;
+                
+                settings.savedStickers.push({
+                    id: newId,
+                    name: importedSticker.name,
+                    link: importedSticker.link
+                });
+                
+                idMapping[importedSticker.originalId] = newId;
+            } else {
+                // 링크가 없는데(보안상 제외됨) 내 목록에도 없음 -> 매핑 불가
+                missingStickers.push(importedSticker.name);
+            }
+        }
+    });
+
+    // 2. 프리셋 데이터의 activeStickers가 사용하는 ID를 새 ID로 교체
+    const newActiveStickers = [];
+    if (data.presetSettings.activeStickers) {
+        data.presetSettings.activeStickers.forEach(sticker => {
+            const remappedId = idMapping[sticker.stickerId];
+            if (remappedId) {
+                // ID 교체 후 추가
+                sticker.stickerId = remappedId;
+                // 혹시 모를 팝업 ID 충돌 방지 위해 갱신
+                sticker.popupId = `sticker-${remappedId}-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+                newActiveStickers.push(sticker);
+            }
+        });
+    }
+
+    // 3. 데이터 저장
+    const finalPreset = data.presetSettings;
+    finalPreset.activeStickers = newActiveStickers;
+    settings.presets[newPresetName] = finalPreset;
+
+    // 4. UI 갱신 및 결과 알림
+    saveSettingsDebounced();
+    renderPresetList();
+    renderStickerList($('#sticker-search-input').val()); // 스티커 목록도 갱신(새로 추가된게 있을 수 있음)
+    
+    // 완료 메시지
+    let msg = `프리셋 [${newPresetName}] 가져오기 완료!`;
+    if (missingStickers.length > 0) {
+        msg += `\n\n⚠️ 다음 스티커는 링크가 없고 내 목록에도 없어 제외되었습니다:\n- ${missingStickers.join('\n- ')}`;
+    }
+    alert(msg);
+    
+    // 바로 선택해드림
+    $('#preset-select-dropdown').val(newPresetName).trigger('change');
+}
 function onResetPositions() {
     if (!confirm('현재 화면에 부착된 모든 스티커를 제거하고, 캐릭터/페르소나 팝업 위치를 화면 중앙으로 초기화하시겠습니까?')) {
         return;
@@ -1591,7 +1746,17 @@ jQuery(async () => {
         $('#save-preset-btn').on('click', onSavePreset);
         $('#load-preset-btn').on('click', onLoadPreset);
         $('#delete-preset-btn').on('click', onDeletePreset);
-        $('#preset-select-dropdown').on('change', updatePresetButtons);
+        $('#preset-select-dropdown').on('change', function() {
+            updatePresetButtons();
+            // 내보내기 버튼 상태도 업데이트
+            const selected = $(this).val();
+            $('#export-preset-btn').prop('disabled', !selected);
+        });
+
+        // [신규] 내보내기/불러오기 이벤트 연결
+        $('#export-preset-btn').on('click', onExportPreset);
+        $('#import-preset-btn').on('click', () => $('#import-preset-file-input').click());
+        $('#import-preset-file-input').on('change', onImportPresetFile);
 
         
         loadSettingsUI();
