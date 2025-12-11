@@ -215,8 +215,8 @@ function applyConfigToPopup(type) {
     
     if (!$popup.length) return;
 
-    let rotation = config.rotation || 0;
-    
+    let rotation = parseInt(config.rotation) || 0;
+
     const imgConfig = config.imageAdjust || { x: 0, y: 0, zoom: 1, rotation: 0 };
     const imgZoom = imgConfig.zoom || 1;
     const imgInnerRotation = imgConfig.rotation || 0;
@@ -224,12 +224,6 @@ function applyConfigToPopup(type) {
     const moveY = imgConfig.y ?? 0;
     
     let imgTransformString = `translate(${moveX}px, ${moveY}px) scale(${imgZoom}) rotate(${imgInnerRotation}deg)`;
-
-    if (config.shape === 'diamond') {
-        rotation = parseInt(config.rotation) || 0; 
-    } else {
-        rotation = parseInt(config.rotation) || 0;
-    }
 
     $img.css('transform', imgTransformString); 
     
@@ -240,7 +234,8 @@ function applyConfigToPopup(type) {
     $popup.css({
         width: `${config.width}px`,
         height: `${config.height}px`,
-        transform: `rotate(${rotation}deg)`
+        transform: `rotate(${rotation}deg)`,
+        '--avatar-rotation': `${rotation}deg` 
     });
 
     $popup.removeClass('square diamond circle arch').addClass(config.shape || 'square');
