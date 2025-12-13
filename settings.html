@@ -157,14 +157,33 @@
                     
                     <h4 style="font-size: 0.9rem; font-weight: 500; margin-top: 20px; margin-bottom: 10px; color: var(--secondary-color);">⭐ 보관함 (더블 클릭: 삭제 / 클릭: 수정)</h4>
 
-                    <div class="control-group" style="margin-bottom: 10px;">
-                        <input type="text" id="sticker-search-input" placeholder="스티커 이름으로 검색...">
+                    <div id="sticker-folder-container" class="sticker-folder-container">
+                        <button id="add-sticker-folder-btn" class="sticker-folder-add-btn" title="새 폴더 탭 추가">+</button>
+                    </div>
+
+                    <div class="control-group" style="margin-bottom: 10px; display: flex; gap: 5px;">
+                        <button id="toggle-sticker-edit-mode-btn" title="스티커 정리(이동) 모드 켜기/끄기">✏️</button>
+                        <input type="text" id="sticker-search-input" placeholder="스티커 이름으로 검색..." style="flex-grow: 1;">
                     </div>
 
                     <div id="sticker-list-container-settings">
                         <div id="sticker-list-placeholder">저장된 스티커가 없습니다.</div>
                     </div>
-                    <div style="font-size: 0.85rem; color: var(--accent-color); margin-top: 10px;">총 저장된 스티커: <span id="sticker-count-display">0</span>개</div>
+                    <div style="font-size: 0.85rem; color: var(--accent-color); margin-top: 10px;">
+                        총 저장된 스티커: <span id="sticker-count-display">0</span>개 
+                        <span id="sticker-move-instruction" style="display: none; color: red; font-weight: bold; margin-left: 10px;">(이동 모드: 스티커를 클릭해 폴더를 선택하세요)</span>
+                    </div>
+					<div id="sticker-move-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
+						<div style="background: white; padding: 20px; border-radius: 10px; width: 300px; max-width: 90%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+							<h4 style="margin-top: 0; color: var(--accent-color); text-align: center;">📂 이동할 폴더 선택</h4>
+							<p id="sticker-move-count-msg" style="text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 15px;">선택된 스티커를 어디로 옮길까요?</p>
+							
+							<div id="sticker-move-folder-list-area" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+								</div>
+
+							<button id="close-sticker-move-modal-btn" style="width: 100%; padding: 10px; background-color: #90A4AE; color: white;">취소</button>
+						</div>
+					</div>
                 </div>
             </div>
 

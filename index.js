@@ -32,9 +32,6 @@ let currentEditingAvatarType = null;
 let avatarPanelPos = { top: -1, left: -1 }; 
 let isAvatarDragging = false; 
 
-
-
-
 const DEFAULT_SETTINGS = {
     enabled: true,
     
@@ -65,17 +62,16 @@ const DEFAULT_SETTINGS = {
     stickerCounter: 0,
     savedStickers: [], 
     
+    stickerFolders: ['전체', '기본'],
+    
     activeStickers: [],
     
-    // [추가됨] 캐릭터 고유 ID(Avatar 파일명)와 프리셋 이름을 매핑하는 객체
     linkedPresets: {}, 
     
     presets: {
         '기본 설정': { 
-            
             charPos: { top: 20, left: 20 },
             personaPos: { top: 20, left: 800 },
-            
             charConfig: { width: 250, height: 350, rotation: 0, imageOverride: '', shape: 'square', imageAdjust: { x: 0, y: 0, zoom: 1.1, rotation: 0 } }, 
             personaConfig: { width: 250, height: 350, rotation: 0, imageOverride: '', shape: 'square', imageAdjust: { x: 0, y: 0, zoom: 1.1, rotation: 0 } }, 
             activeStickers: []
@@ -84,6 +80,9 @@ const DEFAULT_SETTINGS = {
 };
 
 let settings = extension_settings[extensionName];
+let currentSelectedFolder = '전체'; 
+let isStickerMovingMode = false; 
+let selectedStickersForMove = new Set();
 if (!settings || Object.keys(settings).length === 0) {
     settings = Object.assign({}, DEFAULT_SETTINGS);
     extension_settings[extensionName] = settings;
@@ -437,30 +436,42 @@ function renderStickerList(searchQuery = '') {
     const $container = $('#sticker-list-container-settings');
     $container.empty();
     
-    
+    // 이동 모드일 경우 컨테이너에 클래스 추가
+    if (isStickerMovingMode) {
+        $container.addClass('sticker-list-moving-mode');
+    } else {
+        $container.removeClass('sticker-list-moving-mode');
+    }
+
     const query = searchQuery.trim().toLowerCase();
     
-    
+    // 필터링
     const filteredStickers = settings.savedStickers.filter(sticker => {
-        if (!query) return true; 
-        return sticker.name.toLowerCase().includes(query);
+        const matchQuery = !query || sticker.name.toLowerCase().includes(query);
+        const matchFolder = (currentSelectedFolder === '전체') || (sticker.folder === currentSelectedFolder);
+        return matchQuery && matchFolder;
     });
-    
     
     $('#sticker-count-display').text(filteredStickers.length);
 
     if (filteredStickers.length === 0) {
-        $container.append(`<div id="sticker-list-placeholder" style="font-size: 0.8rem; color: #999; display: flex; align-items: center;">${query ? '검색된 스티커가 없습니다.' : '저장된 스티커가 없습니다.'}</div>`);
+        let msg = '저장된 스티커가 없습니다.';
+        if (query) msg = '검색된 스티커가 없습니다.';
+        else if (currentSelectedFolder !== '전체') msg = `'${currentSelectedFolder}' 폴더에 스티커가 없습니다.`;
+        
+        $container.append(`<div id="sticker-list-placeholder" style="font-size: 0.8rem; color: #999; display: flex; align-items: center;">${msg}</div>`);
         return;
     }
 
-    
     filteredStickers.forEach(sticker => { 
-        
+        // [수정] 현재 선택된 스티커라면 클래스 추가
+        const isSelected = selectedStickersForMove.has(sticker.id);
+        const selectedClass = isSelected ? 'selected' : '';
+
         const itemHtml = `
-            <div class="sticker-item" data-id="${sticker.id}" title="더블 클릭: 목록에서 영구 삭제">
+            <div class="sticker-item ${selectedClass}" data-id="${sticker.id}" title="${isStickerMovingMode ? '클릭하여 선택/해제' : '더블 클릭: 목록에서 영구 삭제'}">
                 <div class="sticker-item-content">
-                    <div class="sticker-name-area" data-id="${sticker.id}" title="단일 클릭: 이름 및 링크 수정"></div>
+                    <div class="sticker-name-area" data-id="${sticker.id}" title="${isStickerMovingMode ? '클릭하여 선택' : '단일 클릭: 이름 및 링크 수정'}"></div>
                     <div class="sticker-image-area"></div>
                     <img src="${sticker.link}" alt="${sticker.name} Preview" class="sticker-list-item-preview">
                     <div style="font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;">${sticker.name}</div>
@@ -474,15 +485,15 @@ function renderStickerList(searchQuery = '') {
         $container.append(itemHtml);
     });
 
-    
-    $container.find('.add-sticker-to-canvas').on('click', onAddStickerToCanvas);
-    $container.find('.remove-sticker-from-canvas-btn').on('click', onRemoveActiveStickerInstance); 
-    
-    
-    $container.find('.sticker-name-area').on('click', onStickerItemClickToEdit); 
-    
-    
-    $container.find('.sticker-item-content').on('dblclick', onDeleteStickerFromList); 
+    if (!isStickerMovingMode) {
+        $container.find('.add-sticker-to-canvas').on('click', onAddStickerToCanvas);
+        $container.find('.remove-sticker-from-canvas-btn').on('click', onRemoveActiveStickerInstance); 
+        $container.find('.sticker-name-area').on('click', onStickerItemClickToEdit); 
+        $container.find('.sticker-item-content').on('dblclick', onDeleteStickerFromList); 
+    } else {
+        // 이동 모드일 때는 클릭 시 다중 선택 로직 실행
+        $container.find('.sticker-item').on('click', onStickerMoveClick);
+    }
 }
 
 
@@ -518,23 +529,26 @@ function loadSettingsUI() {
     ['char', 'persona'].forEach(type => {
         const config = settings[`${type}Config`];
         
-        
         $(`#${type}-width-input`).val(config.width);
         $(`#${type}-height-input`).val(config.height);
         $(`#${type}-rotation-input`).val(config.rotation);
         $(`#${type}-image-override-input`).val(config.imageOverride);
-        
-        
         $(`#${type}-shape-select`).val(config.shape); 
         
-        
         applyConfigToPopup(type);
-        
         applyPosToPopup(type);
     });
     
-    
-    renderStickerList(); 
+    // [추가됨] 설정 로드 시 기존 스티커에 폴더 정보가 없다면 '기본'으로 할당 & 폴더 목록 초기화
+    if (!settings.stickerFolders) {
+        settings.stickerFolders = ['전체', '기본'];
+    }
+    settings.savedStickers.forEach(s => {
+        if (!s.folder) s.folder = '기본';
+    });
+
+    renderStickerFolders(); // 폴더 탭 렌더링
+    renderStickerList();    // 스티커 목록 렌더링
     renderActiveStickers(); 
 
     
@@ -798,8 +812,187 @@ function onTabClick() {
     $('.avatar-controls-container').hide().removeClass('active');
     $(`#${target}`).show().addClass('active');
 }
+function renderStickerFolders() {
+    const $container = $('#sticker-folder-container');
+    // '+' 버튼(마지막 요소)을 제외하고 탭 제거
+    $container.find('.sticker-folder-tab').remove();
 
+    settings.stickerFolders.forEach(folderName => {
+        const isActive = (folderName === currentSelectedFolder) ? 'active' : '';
+        // '전체'와 '기본'은 삭제 불가, 나머지는 우클릭 등으로 삭제/이름변경 고려 가능(여기선 단순화)
+        const tabHtml = `<div class="sticker-folder-tab ${isActive}" data-folder="${folderName}">${folderName}</div>`;
+        
+        // + 버튼 앞에 삽입
+        $('#add-sticker-folder-btn').before(tabHtml);
+    });
 
+    // 이벤트 연결
+    $('.sticker-folder-tab').off('click').on('click', function() {
+        const folder = $(this).data('folder');
+        currentSelectedFolder = folder;
+        renderStickerFolders(); // 탭 활성화 상태 갱신
+        renderStickerList($('#sticker-search-input').val()); // 리스트 갱신
+    });
+
+    // 폴더 탭 우클릭 시 삭제/이름변경 (전체, 기본 제외)
+    $('.sticker-folder-tab').on('contextmenu', function(e) {
+        e.preventDefault();
+        const folder = $(this).data('folder');
+        if (folder === '전체' || folder === '기본') return;
+
+        if (confirm(`폴더 [${folder}]를 삭제하시겠습니까?\n(내부의 스티커는 '기본' 폴더로 이동됩니다)`)) {
+            // 내부 스티커 이동
+            settings.savedStickers.forEach(s => {
+                if (s.folder === folder) s.folder = '기본';
+            });
+            // 폴더 삭제
+            settings.stickerFolders = settings.stickerFolders.filter(f => f !== folder);
+            
+            // 현재 보고 있던 폴더가 삭제되면 '전체'로 이동
+            if (currentSelectedFolder === folder) currentSelectedFolder = '전체';
+            
+            saveSettingsDebounced();
+            renderStickerFolders();
+            renderStickerList($('#sticker-search-input').val());
+        }
+    });
+}
+
+function onAddFolder() {
+    const newName = prompt("새 폴더 이름을 입력하세요:");
+    if (!newName) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    
+    if (settings.stickerFolders.includes(trimmed)) {
+        alert("이미 존재하는 폴더 이름입니다.");
+        return;
+    }
+
+    settings.stickerFolders.push(trimmed);
+    saveSettingsDebounced();
+    
+    // 새 폴더로 바로 이동
+    currentSelectedFolder = trimmed;
+    renderStickerFolders();
+    renderStickerList();
+}
+
+function onToggleStickerEditMode() {
+    // [수정] 이미 이동 모드이고, 선택된 스티커가 있다면 -> 모달 띄우기 (모드 종료 X)
+    if (isStickerMovingMode && selectedStickersForMove.size > 0) {
+        showFolderSelectionModal();
+        return;
+    }
+
+    // 그 외(일반 토글 혹은 선택 없이 완료 누름)
+    isStickerMovingMode = !isStickerMovingMode;
+    const $btn = $('#toggle-sticker-edit-mode-btn');
+    
+    if (isStickerMovingMode) {
+        selectedStickersForMove.clear(); // 모드 진입 시 선택 초기화
+        $btn.addClass('active');
+        $btn.html('💾 완료'); 
+        $('#sticker-move-instruction').text('(스티커를 클릭해 선택 후, 완료 버튼을 누르세요)').show();
+        $('#sticker-search-input').prop('disabled', true);
+    } else {
+        selectedStickersForMove.clear(); // 모드 종료 시 선택 초기화
+        $btn.removeClass('active');
+        $btn.html('✏️');
+        $('#sticker-move-instruction').hide();
+        $('#sticker-search-input').prop('disabled', false);
+    }
+
+    renderStickerList($('#sticker-search-input').val());
+}
+
+function onStickerMoveClick(e) {
+    if (!isStickerMovingMode) return;
+    e.stopPropagation();
+
+    const $item = $(this);
+    const stickerId = parseInt($item.data('id'));
+    
+    // 선택 토글 로직
+    if (selectedStickersForMove.has(stickerId)) {
+        selectedStickersForMove.delete(stickerId);
+        $item.removeClass('selected');
+    } else {
+        selectedStickersForMove.add(stickerId);
+        $item.addClass('selected');
+    }
+
+    // 안내 메시지 업데이트
+    const count = selectedStickersForMove.size;
+    if (count > 0) {
+        $('#sticker-move-instruction').text(`(${count}개 선택됨 - 완료 버튼을 눌러 이동)`);
+        $('#toggle-sticker-edit-mode-btn').html(`💾 이동 (${count})`);
+    } else {
+        $('#sticker-move-instruction').text('(스티커를 클릭해 선택 후, 완료 버튼을 누르세요)');
+        $('#toggle-sticker-edit-mode-btn').html('💾 완료');
+    }
+}
+function showFolderSelectionModal() {
+    const $modalOverlay = $('#sticker-move-modal-overlay');
+    const $listArea = $('#sticker-move-folder-list-area');
+    
+    // 선택된 개수 메시지
+    $('#sticker-move-count-msg').text(`총 ${selectedStickersForMove.size}개의 스티커를 어디로 옮길까요?`);
+    
+    // 폴더 목록 버튼 생성
+    $listArea.empty();
+    
+    // '전체'는 이동 대상이 아니므로 제외
+    const targetFolders = settings.stickerFolders.filter(f => f !== '전체');
+
+    targetFolders.forEach(folderName => {
+        const btn = $(`<button class="sticker-move-folder-btn">📁 ${folderName}</button>`);
+        btn.on('click', () => executeBatchMove(folderName));
+        $listArea.append(btn);
+    });
+
+    $modalOverlay.css('display', 'flex'); // 모달 보이기
+    
+    // 취소 버튼 이벤트 연결 (한번만)
+    $('#close-sticker-move-modal-btn').off('click').on('click', closeFolderSelectionModal);
+}
+
+function closeFolderSelectionModal() {
+    $('#sticker-move-modal-overlay').hide();
+}
+
+function executeBatchMove(targetFolder) {
+    if (selectedStickersForMove.size === 0) return;
+
+    let moveCount = 0;
+    
+    settings.savedStickers.forEach(sticker => {
+        if (selectedStickersForMove.has(sticker.id)) {
+            // 이미 같은 폴더면 건너뛰기
+            if (sticker.folder !== targetFolder) {
+                sticker.folder = targetFolder;
+                moveCount++;
+            }
+        }
+    });
+
+    saveSettingsDebounced();
+    
+    alert(`${moveCount}개의 스티커를 [${targetFolder}] 폴더로 이동했습니다.`);
+    
+    // 정리 작업
+    selectedStickersForMove.clear();
+    closeFolderSelectionModal();
+    
+    // 편집 모드 종료
+    onToggleStickerEditMode(); 
+    
+    // UI 갱신 (현재 폴더가 바뀌었을 수 있으므로 목록 다시 그리기)
+    // 만약 이동한 폴더로 바로 보여주고 싶다면 currentSelectedFolder = targetFolder; 추가 가능
+    // 여기선 기존 뷰 유지
+    renderStickerFolders(); 
+    renderStickerList($('#sticker-search-input').val());
+}
 function onSaveNewSticker() {
     const name = $('#sticker-name-input').val().trim();
     const link = $('#sticker-image-link-input').val().trim();
@@ -809,11 +1002,15 @@ function onSaveNewSticker() {
         return;
     }
     
+    // [수정됨] 현재 선택된 폴더가 '전체'라면 '기본'에, 아니면 해당 폴더에 저장
+    const targetFolder = (currentSelectedFolder === '전체') ? '기본' : currentSelectedFolder;
+
     settings.stickerCounter++;
     settings.savedStickers.push({
         id: settings.stickerCounter,
         name: name,
-        link: link
+        link: link,
+        folder: targetFolder // 폴더 정보 저장
     });
 
     
@@ -824,6 +1021,8 @@ function onSaveNewSticker() {
     
     renderStickerList($('#sticker-search-input').val()); 
     saveSettingsDebounced();
+
+    alert(`[${targetFolder}] 폴더에 저장되었습니다.`);
 }
 
 
@@ -1920,7 +2119,8 @@ jQuery(async () => {
             $(this).text(isHidden ? '👆 스티커 정보 입력 창 닫기' : '새 스티커 팝업 저장 및 추가');
         });
         $('#save-new-sticker-btn').on('click', onSaveNewSticker);
-		
+        $('#add-sticker-folder-btn').on('click', onAddFolder);
+        $('#toggle-sticker-edit-mode-btn').on('click', onToggleStickerEditMode);
         $('#sticker-search-input').on('input', function() {
             const query = $(this).val();
             renderStickerList(query);
