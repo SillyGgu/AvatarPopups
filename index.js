@@ -539,7 +539,7 @@ function loadSettingsUI() {
         applyPosToPopup(type);
     });
     
-    // [추가됨] 설정 로드 시 기존 스티커에 폴더 정보가 없다면 '기본'으로 할당 & 폴더 목록 초기화
+    // 설정 로드 시 기존 스티커에 폴더 정보가 없다면 '기본'으로 할당 & 폴더 목록 초기화
     if (!settings.stickerFolders) {
         settings.stickerFolders = ['전체', '기본'];
     }
@@ -877,6 +877,144 @@ function onAddFolder() {
     renderStickerFolders();
     renderStickerList();
 }
+
+// -------------------------------------------------------
+// 폴더(탭) 관리자 로직
+// -------------------------------------------------------
+
+function onManageFolders() {
+    renderFolderManagerList();
+    $('#folder-manager-modal-overlay').css('display', 'flex');
+}
+
+function onCloseManageFolders() {
+    $('#folder-manager-modal-overlay').hide();
+    // 탭 UI 갱신 (순서나 이름이 바뀌었을 수 있으므로)
+    renderStickerFolders();
+    // 만약 현재 보고 있던 폴더가 삭제되었거나 이름이 바뀌었을 수 있으므로 목록도 갱신
+    if (!settings.stickerFolders.includes(currentSelectedFolder)) {
+        currentSelectedFolder = '전체';
+    }
+    renderStickerFolders(); // 탭 활성화 상태 재갱신
+    renderStickerList($('#sticker-search-input').val());
+}
+
+function renderFolderManagerList() {
+    const $list = $('#folder-manager-list-area');
+    $list.empty();
+
+    settings.stickerFolders.forEach((folderName, index) => {
+        const isAll = (folderName === '전체');
+        const isDefault = (folderName === '기본');
+        const isProtected = isAll || isDefault;
+
+        const $item = $(`
+            <div class="folder-manager-item ${isProtected ? 'protected' : ''}">
+                <div style="font-weight: 500; color: #333;">
+                    ${index + 1}. ${folderName} ${isAll ? '(고정)' : ''}
+                </div>
+                <div class="folder-manager-controls">
+                    ${!isAll ? `<button class="folder-btn move-up-btn" title="위로">▲</button>` : ''}
+                    ${!isAll ? `<button class="folder-btn move-down-btn" title="아래로">▼</button>` : ''}
+                    ${!isAll ? `<button class="folder-btn rename-btn" title="이름 변경">✏️</button>` : ''}
+                    ${(!isProtected) ? `<button class="folder-btn delete-btn" title="삭제 (스티커는 기본 폴더로 이동)">🗑️</button>` : ''}
+                </div>
+            </div>
+        `);
+
+        // 이벤트 바인딩
+        if (!isAll) {
+            $item.find('.move-up-btn').on('click', () => moveFolderOrder(index, -1));
+            $item.find('.move-down-btn').on('click', () => moveFolderOrder(index, 1));
+            $item.find('.rename-btn').on('click', () => renameFolder(index));
+        }
+        if (!isProtected) {
+            $item.find('.delete-btn').on('click', () => deleteFolder(index));
+        }
+
+        $list.append($item);
+    });
+}
+
+function moveFolderOrder(index, direction) {
+    const targetIndex = index + direction;
+    // 범위 체크 ('전체'는 0번 인덱스 고정이므로 0번으로 이동하거나 0번을 이동시키려 하면 차단)
+    if (targetIndex <= 0 || targetIndex >= settings.stickerFolders.length) return;
+
+    // 배열 순서 교체
+    const temp = settings.stickerFolders[index];
+    settings.stickerFolders[index] = settings.stickerFolders[targetIndex];
+    settings.stickerFolders[targetIndex] = temp;
+
+    saveSettingsDebounced();
+    renderFolderManagerList();
+}
+
+function renameFolder(index) {
+    const oldName = settings.stickerFolders[index];
+    const newName = prompt(`폴더 [${oldName}]의 새 이름을 입력하세요:`, oldName);
+    
+    if (!newName) return;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+
+    if (settings.stickerFolders.includes(trimmed)) {
+        alert('이미 존재하는 폴더 이름입니다.');
+        return;
+    }
+
+    // 1. 폴더 배열 이름 수정
+    settings.stickerFolders[index] = trimmed;
+
+    // 2. 해당 폴더에 속해있던 스티커들의 folder 속성 일괄 업데이트
+    settings.savedStickers.forEach(sticker => {
+        if (sticker.folder === oldName) {
+            sticker.folder = trimmed;
+        }
+    });
+
+    // 현재 보고 있는 폴더였다면 변수 업데이트
+    if (currentSelectedFolder === oldName) {
+        currentSelectedFolder = trimmed;
+    }
+
+    saveSettingsDebounced();
+    renderFolderManagerList();
+}
+
+function deleteFolder(index) {
+    const folderName = settings.stickerFolders[index];
+    if (folderName === '전체' || folderName === '기본') {
+        alert('이 폴더는 삭제할 수 없습니다.');
+        return;
+    }
+
+    if (!confirm(`폴더 [${folderName}]를 삭제하시겠습니까?\n\n⚠️ 주의: 이 폴더에 있던 모든 스티커는 '기본' 폴더로 이동됩니다.`)) {
+        return;
+    }
+
+    // 1. 스티커 이동 처리
+    let movedCount = 0;
+    settings.savedStickers.forEach(sticker => {
+        if (sticker.folder === folderName) {
+            sticker.folder = '기본';
+            movedCount++;
+        }
+    });
+
+    // 2. 폴더 배열에서 삭제
+    settings.stickerFolders.splice(index, 1);
+
+    // 현재 보고 있던 폴더가 삭제되면 '전체'로 이동
+    if (currentSelectedFolder === folderName) {
+        currentSelectedFolder = '전체';
+    }
+
+    saveSettingsDebounced();
+    renderFolderManagerList();
+    alert(`폴더가 삭제되었습니다. 스티커 ${movedCount}개가 '기본' 폴더로 이동되었습니다.`);
+}
+// -------------------------------------------------------
 
 function onToggleStickerEditMode() {
     // [수정] 이미 이동 모드이고, 선택된 스티커가 있다면 -> 모달 띄우기 (모드 종료 X)
@@ -1585,7 +1723,7 @@ function onLoadPreset() {
     }
 }
 
-// [신규 기능] 캐릭터 변경 시 연동된 프리셋 확인 및 자동 로드
+// 캐릭터 변경 시 연동된 프리셋 확인 및 자동 로드
 function checkAndLoadCharacterPreset() {
     if (!settings.enabled || !this_chid || !characters[this_chid]) return;
 
@@ -1712,7 +1850,7 @@ function renderCharacterLinkUI() {
     renderAllLinkedPresetsList();
 }
 
-// [신규 기능] 연동된 모든 캐릭터 목록 렌더링
+// 연동된 모든 캐릭터 목록 렌더링
 function renderAllLinkedPresetsList() {
     const $container = $('#linked-char-list-container');
     $container.empty();
@@ -1754,7 +1892,7 @@ function renderAllLinkedPresetsList() {
     $container.find('.delete-link-btn').on('click', onDeleteLinkedChar);
 }
 
-// [신규 기능] 목록에서 연동 삭제
+// 목록에서 연동 삭제
 function onDeleteLinkedChar() {
     const avatarFile = $(this).data('avatar');
     if (!avatarFile) return;
@@ -1831,7 +1969,7 @@ function onImportPresetFile(event) {
 }
 
 // -----------------------------------------------------------------
-// [신규 기능] 불러온 데이터 로직 처리 (ID 매핑 및 병합)
+// 불러온 데이터 로직 처리 (ID 매핑 및 병합)
 // -----------------------------------------------------------------
 function processImportedPreset(data) {
     // 유효성 검사
@@ -1903,7 +2041,7 @@ function processImportedPreset(data) {
     // 4. UI 갱신 및 결과 알림
     saveSettingsDebounced();
     renderPresetList();
-    renderStickerList($('#sticker-search-input').val()); // 스티커 목록도 갱신(새로 추가된게 있을 수 있음)
+    renderStickerList($('#sticker-search-input').val()); 
     
     // 완료 메시지
     let msg = `프리셋 [${newPresetName}] 가져오기 완료!`;
@@ -2120,6 +2258,10 @@ jQuery(async () => {
         });
         $('#save-new-sticker-btn').on('click', onSaveNewSticker);
         $('#add-sticker-folder-btn').on('click', onAddFolder);
+        
+        $('#manage-sticker-folders-btn').on('click', onManageFolders);
+        $('#close-folder-manager-btn').on('click', onCloseManageFolders);
+        
         $('#toggle-sticker-edit-mode-btn').on('click', onToggleStickerEditMode);
         $('#sticker-search-input').on('input', function() {
             const query = $(this).val();
@@ -2167,7 +2309,7 @@ jQuery(async () => {
             setTimeout(() => { $btn.css('transform', '').css('transition', ''); }, 500);
         });
 
-        // [신규] 연동 목록 토글 버튼
+        // 연동 목록 토글 버튼
         $('#toggle-linked-list-btn').on('click', function() {
             const $list = $('#linked-char-list-container');
             if ($list.is(':visible')) {

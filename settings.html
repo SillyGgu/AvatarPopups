@@ -161,7 +161,9 @@
                         <button id="add-sticker-folder-btn" class="sticker-folder-add-btn" title="새 폴더 탭 추가">+</button>
                     </div>
 
+                    <!-- [수정됨] 버튼 그룹: 탭 관리 버튼 추가 -->
                     <div class="control-group" style="margin-bottom: 10px; display: flex; gap: 5px;">
+                        <button id="manage-sticker-folders-btn" title="폴더 순서 변경 및 이름 수정/삭제">📁</button>
                         <button id="toggle-sticker-edit-mode-btn" title="스티커 정리(이동) 모드 켜기/끄기">✏️</button>
                         <input type="text" id="sticker-search-input" placeholder="스티커 이름으로 검색..." style="flex-grow: 1;">
                     </div>
@@ -173,17 +175,34 @@
                         총 저장된 스티커: <span id="sticker-count-display">0</span>개 
                         <span id="sticker-move-instruction" style="display: none; color: red; font-weight: bold; margin-left: 10px;">(이동 모드: 스티커를 클릭해 폴더를 선택하세요)</span>
                     </div>
+
+                    <!-- 기존 이동 모달 -->
 					<div id="sticker-move-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
 						<div style="background: white; padding: 20px; border-radius: 10px; width: 300px; max-width: 90%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
 							<h4 style="margin-top: 0; color: var(--accent-color); text-align: center;">📂 이동할 폴더 선택</h4>
 							<p id="sticker-move-count-msg" style="text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 15px;">선택된 스티커를 어디로 옮길까요?</p>
-							
-							<div id="sticker-move-folder-list-area" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-								</div>
-
+							<div id="sticker-move-folder-list-area" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
 							<button id="close-sticker-move-modal-btn" style="width: 100%; padding: 10px; background-color: #90A4AE; color: white;">취소</button>
 						</div>
 					</div>
+
+                    <!-- [신규] 폴더(탭) 관리자 모달 -->
+                    <div id="folder-manager-modal-overlay">
+                        <div class="folder-manager-content">
+                            <h3 style="margin: 0 0 10px 0; color: var(--accent-color); text-align: center;">📂 스티커 폴더(탭) 관리</h3>
+                            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px; text-align: center;">
+                                순서 변경, 이름 수정, 삭제가 가능합니다.<br>
+                                <span style="color: red; font-size: 0.8rem;">* 폴더 삭제 시 내부 스티커는 '기본' 폴더로 이동됩니다.</span>
+                            </p>
+                            
+                            <div id="folder-manager-list-area" class="folder-manager-list">
+                                <!-- JS로 목록 생성됨 -->
+                            </div>
+
+                            <button id="close-folder-manager-btn" style="width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">닫기 (저장됨)</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -742,4 +761,27 @@
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(236, 64, 122, 0.35);
 }
+
+/* 폴더 관리자 닫기 버튼 전용 */
+#close-folder-manager-btn {
+    background-color: var(--accent-color, #EC407A) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 600;
+    box-shadow: 0 3px 6px rgba(236, 64, 122, 0.35);
+}
+
+/* 호버 시 */
+#close-folder-manager-btn:hover {
+    filter: brightness(0.95);
+}
+
+/* 클릭 시 */
+#close-folder-manager-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(236, 64, 122, 0.3);
+}
+
 </style>

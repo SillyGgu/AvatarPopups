@@ -517,3 +517,75 @@
     border-color: var(--accent-color, #EC407A);
     color: var(--accent-color, #EC407A);
 }
+
+#folder-manager-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+}
+
+.folder-manager-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+    max-width: 95%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.folder-manager-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin: 15px 0;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.folder-manager-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fff;
+}
+.folder-manager-item:last-child {
+    border-bottom: none;
+}
+.folder-manager-item.protected {
+    background-color: #f9f9f9;
+}
+
+.folder-manager-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.folder-btn {
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+.folder-btn:hover {
+    background: #eee;
+}
+.folder-btn.delete-btn {
+    color: white;
+    background-color: #ff5252;
+    border-color: #ff5252;
+}
+.folder-btn.delete-btn:hover {
+    background-color: #d32f2f;
+}
