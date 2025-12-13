@@ -374,3 +374,10 @@
     outline: 3px dashed var(--accent-color, #EC407A);
     outline-offset: 2px;
 }
+
+.linked-char-item:last-child {
+    border-bottom: none !important;
+}
+.linked-char-item:hover {
+    background-color: #fafafa !important;
+}

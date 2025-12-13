@@ -6,214 +6,242 @@
         </div>
         
         <div class="inline-drawer-content" id="avatar-popups-menu-content" style="padding: 20px; background-color: #fefcff; border-radius: 0 0 8px 8px;">
-            <div class="control-group" style="display: flex; gap: 20px;">
-				<label class="flex-container">
-					<input type="checkbox" id="avatar_popups_enable_toggle">
-					<span>스티커 팝업 활성화</span>
-				</label>
-
-				<label class="flex-container">
-					<input type="checkbox" id="avatar_popups_ignore_click_toggle">
-					<span>팝업 클릭 무시 (드래그 불가)</span>
-				</label>
-
-				<label class="flex-container">
-					<input type="checkbox" id="avatar_popups_auto_adjust_toggle">
-					<span style="color: var(--accent-color);">창 크기 변경 시 위치 자동 조정</span>
-				</label>
-            </div>
-            <hr class="sysHR">
-
-            <div class="menu-section">
-                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">팝업 설정: 캐릭터/페르소나</h3>
-                
-                <div class="tab-container" id="avatar-persona-tab-container" style="display: flex; margin-bottom: 15px;">
-                    <div class="tab active" data-target="char-avatar-controls" id="char-tab" 
-                         style="flex: 1; padding: 8px; text-align: center; cursor: pointer; background: #f1f1f1; border-bottom: 2px solid transparent; transition: all 0.3s ease; border-radius: 4px 4px 0 0;">캐릭터 포카</div>
-                    <div class="tab" data-target="persona-avatar-controls" id="persona-tab" 
-                         style="flex: 1; padding: 8px; text-align: center; cursor: pointer; background: #f1f1f1; border-bottom: 2px solid transparent; transition: all 0.3s ease; border-radius: 4px 4px 0 0;">페르소나 포카</div>
-                </div>
-
-                <div id="char-avatar-controls" class="avatar-controls-container active">
-                    <div class="control-group" style="margin-bottom: 10px;">
-						<label class="flex-container">
-							<input type="checkbox" id="char-enabled-toggle">
-							<span style="color: var(--accent-color);">이 포카 표시하기</span>
-						</label>
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 사이즈 [ W ]x[ H ]px</label>
-                        <div class="input-group" style="display: flex; gap: 10px;">
-                            <input type="number" id="char-width-input" placeholder="너비 (250)" class="avatar-config-input" data-type="char" data-key="width" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                            <input type="number" id="char-height-input" placeholder="높이 (350)" class="avatar-config-input" data-type="char" data-key="height" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 형태</label>
-                        <select id="char-shape-select" class="avatar-config-input" data-type="char" data-key="shape" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                            <option value="square">사각형 (기본)</option>
-                            <option value="diamond">마름모</option>
-                            <option value="circle">동그라미</option>
-                            <option value="arch">아치형 (창문)</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">회전각 (°)</label>
-                        <input type="number" id="char-rotation-input" placeholder="0" class="avatar-config-input" data-type="char" data-key="rotation" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업틀 이미지 덮어씌우기 (링크)</label>
-                        <input type="text" id="char-image-override-input" placeholder="https://..." class="avatar-config-input" data-type="char" data-key="imageOverride" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                    </div>
-                </div>
-
-                <div id="persona-avatar-controls" class="avatar-controls-container" style="display: none;">
-                    <div class="control-group" style="margin-bottom: 10px;">
-						<label class="flex-container">
-							<input type="checkbox" id="persona-enabled-toggle">
-							<span style="color: var(--accent-color);">이 포카 표시하기</span>
-						</label>
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 사이즈 [ W ]x[ H ]px</label>
-                        <div class="input-group" style="display: flex; gap: 10px;">
-                            <input type="number" id="persona-width-input" placeholder="너비 (250)" class="avatar-config-input" data-type="persona" data-key="width" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                            <input type="number" id="persona-height-input" placeholder="높이 (350)" class="avatar-config-input" data-type="persona" data-key="height" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업 틀 형태</label>
-                        <select id="persona-shape-select" class="avatar-config-input" data-type="persona" data-key="shape" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                            <option value="square">사각형 (기본)</option>
-                            <option value="diamond">마름모</option>
-                            <option value="circle">동그라미</option>
-                            <option value="arch">아치형 (창문)</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">회전각 (°)</label>
-                        <input type="number" id="persona-rotation-input" placeholder="0" class="avatar-config-input" data-type="persona" data-key="rotation" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                    </div>
-
-                    <div class="control-group">
-                        <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">팝업틀 이미지 덮어씌우기 (링크)</label>
-                        <input type="text" id="persona-image-override-input" placeholder="https://..." class="avatar-config-input" data-type="persona" data-key="imageOverride" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                    </div>
-                </div>
-                
-                </div>
-
-            <hr class="sysHR">
-
-            <div class="menu-section">
-                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">팝업 추가 (스티커)</h3>
-
-                <div class="control-group">
-                    <button id="toggle-add-sticker-input-btn" style="width: 100%; padding: 10px; background-color: var(--secondary-color); color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">새 스티커 팝업 저장 및 추가</button>
-                </div>
-
-                <div id="add-sticker-input-popup" style="margin-top: 15px; padding: 15px; border: 1px dashed var(--accent-color); border-radius: 8px; background-color: #fff9fc; display: none;">
-                    <h4 style="font-size: 0.95rem; font-weight: 500; margin-bottom: 10px; color: var(--accent-color);">⭐ 새 스티커 정보 입력</h4>
-                    <div class="control-group">
-                        <label for="sticker-name-input" style="display: block; font-size: 0.9rem; margin-bottom: 5px;">스티커 이름 (목록 표시용)</label>
-                        <input type="text" id="sticker-name-input" placeholder="예: '다꾸 토끼'" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                    </div>
-                    <div class="control-group">
-                        <label for="sticker-image-link-input" style="display: block; font-size: 0.9rem; margin-bottom: 5px;">이미지 링크 삽입 (배경 투명화된 이미지)</label>
-                        <input type="text" id="sticker-image-link-input" placeholder="https://..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                    </div>
-                    <button id="save-new-sticker-btn" style="width: 100%; padding: 10px; background-color: var(--accent-color); color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s; margin-top: 10px;">저장 및 목록에 추가</button>
-                </div>
-                
-                <h4 style="font-size: 0.9rem; font-weight: 500; margin-top: 20px; margin-bottom: 10px; color: var(--secondary-color);">⭐ 목록 (더블 클릭: 영구 삭제, 단일 클릭: 이름/링크 수정)</h4>
-
-                <div class="control-group" style="margin-bottom: 10px;">
-                    <input type="text" id="sticker-search-input" placeholder="스티커 이름으로 검색..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px;">
-                </div>
-
-                <div id="sticker-list-container-settings">
-                    <div id="sticker-list-placeholder" style="font-size: 0.8rem; color: #999; display: flex; align-items: center;">저장된 스티커가 없습니다.</div>
-                </div>
-
-                <div style="font-size: 0.85rem; color: var(--accent-color); margin-top: 10px;">총 저장된 스티커: <span id="sticker-count-display">0</span>개</div>
-            </div> <hr class="sysHR">
-
-            <div class="menu-section" id="additional-features-section">
-                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">추가 기능</h3>
-                
-                <div class="control-group" style="display: flex; gap: 20px; flex-wrap: wrap;">
-					<label class="flex-container">
-						<input type="checkbox" id="avatar_popups_ignore_char_click_toggle">
-						<span style="color: var(--color-accent);">포카만 클릭 무시</span>
-					</label>
-
-					<label class="flex-container">
-						<input type="checkbox" id="avatar_popups_ignore_sticker_click_toggle">
-						<span style="color: var(--color-accent);">스티커만 클릭 무시</span>
-					</label>
-
-					<label class="flex-container">
-						<input type="checkbox" id="avatar_popups_floating_toggle">
-						<span style="color: var(--secondary-color);">플로팅 포카</span>
-					</label>
-                </div>
-                <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">*팝업 클릭 무시'가 켜져 있으면, 이곳의 클릭 설정들은 무시됩니다.</p>
-                <div class="control-group" style="margin-top: 15px;">
-                    <button id="reset-positions-btn" style="width: 100%; padding: 10px; background-color: #90A4AE; color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">
-                        🔄 화면 정리 및 포카 위치 중앙으로 초기화
-                    </button>
-                    <p style="font-size: 0.75rem; color: #999; margin-top: 5px;">* 현재 화면에 붙은 스티커를 모두 제거하고, 캐릭터/페르소나 팝업을 화면 중앙으로 불러옵니다.</p>
-                </div>
-            </div>
-
-            <hr class="sysHR">
-
-            <div class="menu-section">
-                <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 15px; color: var(--secondary-color);">프리셋 기능 (스티커 & 아바타 설정)</h3>
-                
-                <div class="control-group">
-                    <input type="text" id="preset-name-input" placeholder="새 프리셋 이름 입력" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px;">
-                    <button id="save-preset-btn" style="width: 100%; padding: 10px; background-color: #F48FB1; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s; margin-bottom: 15px;">현재 설정 프리셋으로 저장</button>
-                </div>
-
-                <div class="control-group">
-                    <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">프리셋 목록</label>
-                    <select id="preset-select-dropdown" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px; font-family: inherit;">
-                        <option value="" data-preset="none" disabled selected>저장된 프리셋을 선택하세요...</option>
-                        </select>
-                    
-                    <div class="input-group" style="display: flex; gap: 10px;">
-                        <button id="load-preset-btn" style="flex: 1; padding: 10px; background-color: #EC407A; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;" disabled>프리셋 불러오기</button>
-                        <button id="delete-preset-btn" style="flex: 1; padding: 10px; background-color: #E0E0E0; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;" disabled>프리셋 삭제</button>
-                    </div>
-                </div>
-            </div>
-			<div class="control-group" style="margin-top: 15px; border-top: 1px dashed #ddd; padding-top: 15px;">
-				<label style="display: block; font-size: 0.9rem; margin-bottom: 8px; color: var(--secondary-color);">📂 프리셋 공유 및 백업</label>
-				
-				<label class="flex-container" style="margin-bottom: 10px;">
-					<input type="checkbox" id="preset-include-links-toggle" checked>
-					<span style="font-size: 0.85rem;">내보낼 때 이미지 링크 포함 (해제 시 이름만 내보냄)</span>
-				</label>
-
-				<div class="input-group" style="display: flex; gap: 10px;">
-					<button id="export-preset-btn" style="flex: 1; padding: 10px; background-color: #7986CB; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;" disabled>
-						현재 프리셋 내보내기 (.json)
-					</button>
-					<button id="import-preset-btn" style="flex: 1; padding: 10px; background-color: #9575CD; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">
-						프리셋 불러오기
-					</button>
-				</div>
-				<input type="file" id="import-preset-file-input" accept=".json" style="display: none;">
-			</div>
             
+            <div class="main-nav-container">
+                <div class="main-nav-item active" data-tab="tab-general">⚙️ 기본</div>
+                <div class="main-nav-item" data-tab="tab-avatars">🖼️ 포토카드</div>
+                <div class="main-nav-item" data-tab="tab-stickers">✨ 스티커</div>
+                <div class="main-nav-item" data-tab="tab-presets">💾 프리셋</div>
+            </div>
+            
+            <hr class="sysHR" style="margin-top: 0;">
+
+            <div id="tab-general" class="main-tab-content active">
+                <div class="control-group" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <label class="flex-container">
+                        <input type="checkbox" id="avatar_popups_enable_toggle">
+                        <span>스티커 팝업 활성화</span>
+                    </label>
+                    <label class="flex-container">
+                        <input type="checkbox" id="avatar_popups_ignore_click_toggle">
+                        <span>전체 클릭 무시 (드래그 불가)</span>
+                    </label>
+                    <label class="flex-container">
+                        <input type="checkbox" id="avatar_popups_auto_adjust_toggle">
+                        <span style="color: var(--accent-color);">창 크기 변경 시 위치 자동 조정</span>
+                    </label>
+                </div>
+
+                <div class="menu-section">
+                    <h3 class="section-title">추가 기능</h3>
+                    <div class="control-group" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <label class="flex-container">
+                            <input type="checkbox" id="avatar_popups_ignore_char_click_toggle">
+                            <span style="color: var(--color-accent);">포카만 클릭 무시</span>
+                        </label>
+                        <label class="flex-container">
+                            <input type="checkbox" id="avatar_popups_ignore_sticker_click_toggle">
+                            <span style="color: var(--color-accent);">스티커만 클릭 무시</span>
+                        </label>
+                        <label class="flex-container">
+                            <input type="checkbox" id="avatar_popups_floating_toggle">
+                            <span style="color: var(--secondary-color);">플로팅 효과 (둥둥 뜨기)</span>
+                        </label>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">* '전체 클릭 무시'가 켜져 있으면, 개별 클릭 설정들은 무시됩니다.</p>
+                    
+                    <div class="control-group" style="margin-top: 15px;">
+                        <button id="reset-positions-btn" style="width: 100%; padding: 12px; background-color: #90A4AE; color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.3s;">
+                            🔄 화면 정리 및 포카 위치 중앙으로 초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-avatars" class="main-tab-content">
+                <div class="menu-section">
+                    <h3 class="section-title">캐릭터/페르소나 설정</h3>
+                    
+                    <div class="tab-container" id="avatar-persona-tab-container" style="display: flex; margin-bottom: 15px;">
+                        <div class="tab active" data-target="char-avatar-controls" id="char-tab">캐릭터 포카</div>
+                        <div class="tab" data-target="persona-avatar-controls" id="persona-tab">페르소나 포카</div>
+                    </div>
+
+                    <div id="char-avatar-controls" class="avatar-controls-container active">
+                        <div class="control-group" style="margin-bottom: 10px;">
+                            <label class="flex-container">
+                                <input type="checkbox" id="char-enabled-toggle">
+                                <span style="color: var(--accent-color);">이 포카 표시하기</span>
+                            </label>
+                        </div>
+                        <div class="control-group">
+                            <label>팝업 틀 사이즈 [ W ]x[ H ]px</label>
+                            <div class="input-group" style="display: flex; gap: 10px;">
+                                <input type="number" id="char-width-input" placeholder="너비 (250)" class="avatar-config-input" data-type="char" data-key="width">
+                                <input type="number" id="char-height-input" placeholder="높이 (350)" class="avatar-config-input" data-type="char" data-key="height">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>팝업 틀 형태</label>
+                            <select id="char-shape-select" class="avatar-config-input" data-type="char" data-key="shape">
+                                <option value="square">사각형 (기본)</option>
+                                <option value="diamond">마름모</option>
+                                <option value="circle">동그라미</option>
+                                <option value="arch">아치형 (창문)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>회전각 (°)</label>
+                            <input type="number" id="char-rotation-input" placeholder="0" class="avatar-config-input" data-type="char" data-key="rotation">
+                        </div>
+                        <div class="control-group">
+                            <label>팝업틀 이미지 덮어씌우기 (링크)</label>
+                            <input type="text" id="char-image-override-input" placeholder="https://..." class="avatar-config-input" data-type="char" data-key="imageOverride">
+                        </div>
+                    </div>
+
+                    <div id="persona-avatar-controls" class="avatar-controls-container" style="display: none;">
+                        <div class="control-group" style="margin-bottom: 10px;">
+                            <label class="flex-container">
+                                <input type="checkbox" id="persona-enabled-toggle">
+                                <span style="color: var(--accent-color);">이 포카 표시하기</span>
+                            </label>
+                        </div>
+                        <div class="control-group">
+                            <label>팝업 틀 사이즈 [ W ]x[ H ]px</label>
+                            <div class="input-group" style="display: flex; gap: 10px;">
+                                <input type="number" id="persona-width-input" placeholder="너비 (250)" class="avatar-config-input" data-type="persona" data-key="width">
+                                <input type="number" id="persona-height-input" placeholder="높이 (350)" class="avatar-config-input" data-type="persona" data-key="height">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>팝업 틀 형태</label>
+                            <select id="persona-shape-select" class="avatar-config-input" data-type="persona" data-key="shape">
+                                <option value="square">사각형 (기본)</option>
+                                <option value="diamond">마름모</option>
+                                <option value="circle">동그라미</option>
+                                <option value="arch">아치형 (창문)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>회전각 (°)</label>
+                            <input type="number" id="persona-rotation-input" placeholder="0" class="avatar-config-input" data-type="persona" data-key="rotation">
+                        </div>
+                        <div class="control-group">
+                            <label>팝업틀 이미지 덮어씌우기 (링크)</label>
+                            <input type="text" id="persona-image-override-input" placeholder="https://..." class="avatar-config-input" data-type="persona" data-key="imageOverride">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-stickers" class="main-tab-content">
+                <div class="menu-section">
+                    <h3 class="section-title">팝업 추가 (스티커)</h3>
+                    <div class="control-group">
+                        <button id="toggle-add-sticker-input-btn" style="width: 100%; padding: 10px; background-color: var(--secondary-color); color: var(--white-color); border: none; border-radius: 5px; cursor: pointer;">새 스티커 팝업 저장 및 추가</button>
+                    </div>
+
+                    <div id="add-sticker-input-popup" style="margin-top: 15px; padding: 15px; border: 1px dashed var(--accent-color); border-radius: 8px; background-color: #fff9fc; display: none;">
+                        <h4 style="font-size: 0.95rem; font-weight: 500; margin-bottom: 10px; color: var(--accent-color);">⭐ 새 스티커 정보 입력</h4>
+                        <div class="control-group">
+                            <label for="sticker-name-input">스티커 이름 (목록 표시용)</label>
+                            <input type="text" id="sticker-name-input" placeholder="예: '다꾸 토끼'">
+                        </div>
+                        <div class="control-group">
+                            <label for="sticker-image-link-input">이미지 링크 삽입 (배경 투명화된 이미지)</label>
+                            <input type="text" id="sticker-image-link-input" placeholder="https://...">
+                        </div>
+                        <button id="save-new-sticker-btn" style="width: 100%; padding: 10px; background-color: var(--accent-color); color: var(--white-color); border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">저장 및 목록에 추가</button>
+                    </div>
+                    
+                    <h4 style="font-size: 0.9rem; font-weight: 500; margin-top: 20px; margin-bottom: 10px; color: var(--secondary-color);">⭐ 보관함 (더블 클릭: 삭제 / 클릭: 수정)</h4>
+
+                    <div class="control-group" style="margin-bottom: 10px;">
+                        <input type="text" id="sticker-search-input" placeholder="스티커 이름으로 검색...">
+                    </div>
+
+                    <div id="sticker-list-container-settings">
+                        <div id="sticker-list-placeholder">저장된 스티커가 없습니다.</div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--accent-color); margin-top: 10px;">총 저장된 스티커: <span id="sticker-count-display">0</span>개</div>
+                </div>
+            </div>
+
+            <div id="tab-presets" class="main-tab-content">
+                <div class="menu-section">
+                    <h3 class="section-title">프리셋 관리</h3>
+                    
+                    <div class="control-group">
+                        <input type="text" id="preset-name-input" placeholder="새 프리셋 이름 입력" style="margin-bottom: 10px;">
+                        <button id="save-preset-btn" style="width: 100%; padding: 10px; background-color: #F48FB1; color: #FFFFFF; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">현재 설정 프리셋으로 저장</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label>저장된 프리셋 목록</label>
+                        <select id="preset-select-dropdown" style="margin-bottom: 10px;">
+                            <option value="" disabled selected>선택하세요...</option>
+                        </select>
+                        
+                        <div class="input-group" style="display: flex; gap: 10px;">
+                            <button id="load-preset-btn" style="flex: 1; padding: 10px; background-color: #EC407A; color: #FFFFFF;" disabled>불러오기</button>
+                            <button id="delete-preset-btn" style="flex: 1; padding: 10px; background-color: #E0E0E0; color: #333;" disabled>삭제</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-section" style="border-top: 1px dashed #ddd; padding-top: 15px; margin-bottom: 15px;">
+                    <h3 class="section-title">🔗 캐릭터별 자동 연동</h3>
+                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">
+                        현재 대화 중인 캐릭터에게 특정 프리셋을 지정하면, 해당 캐릭터를 불러올 때마다 자동으로 프리셋이 적용됩니다.
+                    </p>
+                    
+                    <div style="background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #eee; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div id="char-link-info-area" style="font-size: 0.9rem; line-height: 1.5;">
+                            캐릭터 정보를 불러오는 중...
+                        </div>
+                        <button id="refresh-char-info-btn" title="캐릭터 정보 새로고침" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0 5px;">
+                            🔄
+                        </button>
+                    </div>
+
+                    <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button id="save-char-link-btn" style="flex: 2; padding: 10px; background-color: var(--accent-color); color: #FFFFFF;" title="위 목록에서 선택된 프리셋을 현재 캐릭터에 연결합니다.">
+                            현재 캐릭터에 '선택된 프리셋' 연동 저장
+                        </button>
+                        <button id="remove-char-link-btn" style="flex: 1; padding: 10px; background-color: #90A4AE; color: #FFFFFF;" disabled title="연동을 해제합니다.">
+                            연동 해제
+                        </button>
+                    </div>
+
+                    <div class="control-group">
+                        <button id="toggle-linked-list-btn" style="width: 100%; padding: 8px; background-color: #ECEFF1; color: #455A64; border: 1px solid #CFD8DC; font-size: 0.85rem;">
+                            📋 연동된 모든 캐릭터 목록 관리 (열기/닫기)
+                        </button>
+                        <div id="linked-char-list-container" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 5px; padding: 5px;">
+                            <div style="padding: 10px; text-align: center; color: #999; font-size: 0.8rem;">연동된 캐릭터가 없습니다.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-section" style="border-top: 1px dashed #ddd; padding-top: 15px; margin-bottom: 0;">
+                    <h3 class="section-title">📂 공유 및 백업</h3>
+                    
+                    <label class="flex-container" style="margin-bottom: 10px;">
+                        <input type="checkbox" id="preset-include-links-toggle" checked>
+                        <span style="font-size: 0.85rem;">내보낼 때 이미지 링크 포함 (해제 시 공란)</span>
+                    </label>
+
+                    <div class="input-group" style="display: flex; gap: 10px;">
+                        <button id="export-preset-btn" style="flex: 1; padding: 10px; background-color: #7986CB; color: #FFFFFF;" disabled>
+                            내보내기 (.json)
+                        </button>
+                        <button id="import-preset-btn" style="flex: 1; padding: 10px; background-color: #9575CD; color: #FFFFFF;">
+                            가져오기
+                        </button>
+                    </div>
+                    <input type="file" id="import-preset-file-input" accept=".json" style="display: none;">
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -606,5 +634,93 @@
     align-items: center;
     gap: 10px;
     cursor: pointer;
+}
+
+.main-nav-container {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.main-nav-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #888;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-size: 0.95rem;
+}
+
+.main-nav-item:hover {
+    background-color: #f5f5f5;
+    color: var(--accent-color, #EC407A);
+}
+
+.main-nav-item.active {
+    background-color: var(--accent-color, #EC407A);
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(236, 64, 122, 0.3);
+}
+
+/* 탭 컨텐츠 영역 */
+.main-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.main-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    color: var(--secondary-color, #666); 
+    position: relative;
+    padding-right: 15px;
+}
+.section-title::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;  
+    height: 20px;
+    background-color: var(--accent-color, #EC407A); 
+    border-radius: 3px; 
+}
+
+#save-char-link-btn {
+    background: linear-gradient(
+        135deg,
+        var(--accent-color, #EC407A),
+        var(--secondary-color, #F48FB1)
+    );
+    color: #FFFFFF;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    box-shadow: 0 3px 6px rgba(236, 64, 122, 0.35);
+}
+
+#save-char-link-btn:hover {
+    filter: brightness(0.95);
+    box-shadow: 0 4px 10px rgba(236, 64, 122, 0.45);
+}
+
+#save-char-link-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(236, 64, 122, 0.35);
 }
 </style>

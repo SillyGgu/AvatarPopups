@@ -65,7 +65,10 @@ const DEFAULT_SETTINGS = {
     stickerCounter: 0,
     savedStickers: [], 
     
-    activeStickers: [], 
+    activeStickers: [],
+    
+    // [추가됨] 캐릭터 고유 ID(Avatar 파일명)와 프리셋 이름을 매핑하는 객체
+    linkedPresets: {}, 
     
     presets: {
         '기본 설정': { 
@@ -1351,9 +1354,8 @@ function onSavePreset() {
     saveSettingsDebounced();
 }
 
-function onLoadPreset() {
-    const presetName = $('#preset-select-dropdown').val();
-    if (!presetName || !settings.presets[presetName]) return;
+function applyPreset(presetName) {
+    if (!presetName || !settings.presets[presetName]) return false;
     
     const preset = settings.presets[presetName];
     
@@ -1369,11 +1371,42 @@ function onLoadPreset() {
         settings.activeStickers = [];
     }
     
-    
+    // UI 및 화면 갱신
     loadSettingsUI(); 
+    return true;
+}
 
-    alert(`프리셋 [${presetName}]을(를) 불러왔습니다.`);
-    saveSettingsDebounced();
+// [기존 수정] 버튼 클릭 시 프리셋 로드
+function onLoadPreset() {
+    const presetName = $('#preset-select-dropdown').val();
+    
+    if (applyPreset(presetName)) {
+        alert(`프리셋 [${presetName}]을(를) 불러왔습니다.`);
+        saveSettingsDebounced();
+    }
+}
+
+// [신규 기능] 캐릭터 변경 시 연동된 프리셋 확인 및 자동 로드
+function checkAndLoadCharacterPreset() {
+    if (!settings.enabled || !this_chid || !characters[this_chid]) return;
+
+    const currentCharacter = characters[this_chid];
+    // 캐릭터 식별자로 avatar 파일명을 사용 (이름은 중복될 수 있으므로)
+    const charId = currentCharacter.avatar; 
+    
+    // 연동된 프리셋이 있는지 확인
+    if (settings.linkedPresets && settings.linkedPresets[charId]) {
+        const targetPresetName = settings.linkedPresets[charId];
+        
+        // 해당 프리셋이 실제로 존재하는지 확인
+        if (settings.presets[targetPresetName]) {
+            console.log(`[AvatarPopups] Auto-loading preset '${targetPresetName}' for character '${currentCharacter.name}'`);
+            applyPreset(targetPresetName);
+            // 자동 로드 후에는 저장을 바로 하지 않아도 되지만, 
+            // 현재 상태 유지를 위해 저장하고 싶다면 아래 주석 해제
+            // saveSettingsDebounced();
+        }
+    }
 }
 
 function onDeletePreset() {
@@ -1438,7 +1471,146 @@ function onExportPreset() {
 }
 
 // -----------------------------------------------------------------
-// [신규 기능] 프리셋 파일 읽기 및 처리 (Import)
+// 캐릭터별 프리셋 연동 UI 및 로직
+// -----------------------------------------------------------------
+
+function renderCharacterLinkUI() {
+    // [수정됨] 현재 선택된 캐릭터 정보 가져오기 로직 강화
+    if (typeof this_chid === 'undefined' || this_chid === undefined || !characters[this_chid]) {
+        $('#char-link-info-area').html('<span style="color: #999;">캐릭터 정보를 찾을 수 없습니다.<br>(채팅방에 입장해 있나요?)</span>');
+        $('#save-char-link-btn').prop('disabled', true);
+        $('#remove-char-link-btn').prop('disabled', true);
+        return;
+    }
+
+    const currentCharacter = characters[this_chid];
+    const charId = currentCharacter.avatar;
+    const charName = currentCharacter.name;
+    const linkedPreset = settings.linkedPresets ? settings.linkedPresets[charId] : null;
+
+    // UI 텍스트 업데이트
+    let statusHtml = `<strong>현재 캐릭터:</strong> ${charName}<br>`;
+    
+    if (linkedPreset && settings.presets[linkedPreset]) {
+        statusHtml += `<strong>연동된 프리셋:</strong> <span style="color: var(--accent-color);">${linkedPreset}</span>`;
+        $('#remove-char-link-btn').prop('disabled', false);
+        
+        // 편의성: 이미 연동된게 있다면 드롭다운도 맞춰줍니다.
+        const $dropdown = $('#preset-select-dropdown');
+        if ($dropdown.val() !== linkedPreset) {
+             $dropdown.val(linkedPreset);
+             updatePresetButtons(); // 버튼 상태 갱신
+        }
+    } else {
+        statusHtml += `<strong>연동 상태:</strong> <span style="color: #999;">없음 (프리셋 선택 후 '연동 저장' 클릭)</span>`;
+        $('#remove-char-link-btn').prop('disabled', true);
+    }
+
+    $('#char-link-info-area').html(statusHtml);
+    $('#save-char-link-btn').prop('disabled', false);
+    
+    // 전체 목록도 갱신 (리스트가 열려있을 수 있으므로)
+    renderAllLinkedPresetsList();
+}
+
+// [신규 기능] 연동된 모든 캐릭터 목록 렌더링
+function renderAllLinkedPresetsList() {
+    const $container = $('#linked-char-list-container');
+    $container.empty();
+
+    if (!settings.linkedPresets || Object.keys(settings.linkedPresets).length === 0) {
+        $container.append('<div style="padding: 10px; text-align: center; color: #999; font-size: 0.8rem;">연동된 캐릭터가 없습니다.</div>');
+        return;
+    }
+
+    // 캐릭터 이름 매핑을 위해 characters 배열을 순회하여 맵 생성 (ID -> Name)
+    // 캐릭터가 삭제되었을 수도 있으므로, avatar 파일명을 기준으로 매칭 시도
+    const avatarToNameMap = {};
+    if (Array.isArray(characters)) {
+        characters.forEach(c => {
+            if (c.avatar) avatarToNameMap[c.avatar] = c.name;
+        });
+    }
+
+    Object.keys(settings.linkedPresets).forEach(avatarFile => {
+        const presetName = settings.linkedPresets[avatarFile];
+        // 캐릭터 이름이 있으면 이름, 없으면 파일명 표시
+        const displayName = avatarToNameMap[avatarFile] || `(삭제됨/미확인) ${avatarFile}`;
+
+        const itemHtml = `
+            <div class="linked-char-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; background: #fff;">
+                <div style="font-size: 0.85rem; overflow: hidden;">
+                    <div style="font-weight: bold; color: #333;">👤 ${displayName}</div>
+                    <div style="color: var(--accent-color); font-size: 0.8rem;">➥ ${presetName}</div>
+                </div>
+                <button class="delete-link-btn" data-avatar="${avatarFile}" title="연동 해제" style="background: #ff5252; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8rem;">
+                    삭제
+                </button>
+            </div>
+        `;
+        $container.append(itemHtml);
+    });
+
+    // 동적 생성된 삭제 버튼에 이벤트 연결
+    $container.find('.delete-link-btn').on('click', onDeleteLinkedChar);
+}
+
+// [신규 기능] 목록에서 연동 삭제
+function onDeleteLinkedChar() {
+    const avatarFile = $(this).data('avatar');
+    if (!avatarFile) return;
+
+    if (confirm('해당 캐릭터의 프리셋 연동을 해제하시겠습니까?')) {
+        delete settings.linkedPresets[avatarFile];
+        saveSettingsDebounced();
+        
+        // UI 갱신 (현재 보고 있는 캐릭터일 수도 있으므로 둘 다 갱신)
+        renderCharacterLinkUI();
+        renderAllLinkedPresetsList();
+    }
+}
+
+function onSaveCharLink() {
+    if (!this_chid || !characters[this_chid]) {
+        alert('캐릭터가 로드되지 않았습니다.');
+        return;
+    }
+
+    const presetName = $('#preset-select-dropdown').val();
+    if (!presetName) {
+        alert('연동할 프리셋을 목록에서 선택해주세요.');
+        return;
+    }
+
+    const currentCharacter = characters[this_chid];
+    const charId = currentCharacter.avatar;
+
+    // 연동 정보 저장
+    if (!settings.linkedPresets) settings.linkedPresets = {};
+    settings.linkedPresets[charId] = presetName;
+
+    renderCharacterLinkUI();
+    saveSettingsDebounced();
+    alert(`[${currentCharacter.name}] 캐릭터가 들어오면 자동으로 [${presetName}] 프리셋이 적용됩니다.`);
+}
+
+function onRemoveCharLink() {
+    if (!this_chid || !characters[this_chid]) return;
+
+    const currentCharacter = characters[this_chid];
+    const charId = currentCharacter.avatar;
+
+    if (settings.linkedPresets && settings.linkedPresets[charId]) {
+        if (confirm(`[${currentCharacter.name}] 캐릭터의 프리셋 연동을 해제하시겠습니까?`)) {
+            delete settings.linkedPresets[charId];
+            renderCharacterLinkUI();
+            saveSettingsDebounced();
+        }
+    }
+}
+
+// -----------------------------------------------------------------
+// 프리셋 파일 읽기 및 처리 (Import)
 // -----------------------------------------------------------------
 function onImportPresetFile(event) {
     const file = event.target.files[0];
@@ -1697,11 +1869,26 @@ function initializePopups() {
     togglePopups(settings.enabled);
     updateAvatars();
 
+    // 캐릭터 변경 감지 이벤트
     $(document).on('change', '#character_select', () => {
-        setTimeout(updateAvatars, 200); 
+        // 이미지가 로드될 시간을 살짝 주고, 아바타 갱신 및 프리셋 자동 로드 실행
+        setTimeout(() => {
+            updateAvatars();
+            checkAndLoadCharacterPreset(); // [추가됨] 프리셋 자동 로드
+            
+            // 설정창이 열려있다면 UI도 갱신
+            if ($('#avatar-popups-menu-content').is(':visible')) {
+                 renderCharacterLinkUI();
+            }
+        }, 200); 
     });
+    
     eventSource.on(event_types.SETTINGS_UPDATED, updateAvatars);
-    eventSource.on(event_types.CHAT_CHANGED, updateAvatars);
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        updateAvatars();
+        // 채팅방이 바뀌었을 때도 캐릭터가 변경되었을 수 있으므로 체크
+        setTimeout(checkAndLoadCharacterPreset, 200);
+    });
 }
 
 
@@ -1738,7 +1925,20 @@ jQuery(async () => {
             const query = $(this).val();
             renderStickerList(query);
         });
-        
+        $('.main-nav-item').on('click', function() {
+            // 1. 모든 탭 버튼 비활성화
+            $('.main-nav-item').removeClass('active');
+            // 2. 현재 클릭한 탭 활성화
+            $(this).addClass('active');
+            
+            // 3. 탭 ID 가져오기
+            const targetTabId = $(this).data('tab');
+            
+            // 4. 모든 컨텐츠 숨기기
+            $('.main-tab-content').removeClass('active');
+            // 5. 타겟 컨텐츠 보이기
+            $('#' + targetTabId).addClass('active');
+        });
         
         $('#save-preset-btn').on('click', onSavePreset);
         
@@ -1753,12 +1953,41 @@ jQuery(async () => {
             $('#export-preset-btn').prop('disabled', !selected);
         });
 
-        // [신규] 내보내기/불러오기 이벤트 연결
+        // 내보내기/불러오기 이벤트 연결
         $('#export-preset-btn').on('click', onExportPreset);
         $('#import-preset-btn').on('click', () => $('#import-preset-file-input').click());
         $('#import-preset-file-input').on('change', onImportPresetFile);
+        $('#save-char-link-btn').on('click', onSaveCharLink);
+        $('#remove-char-link-btn').on('click', onRemoveCharLink);
+        $('#refresh-char-info-btn').on('click', function() {
+            renderCharacterLinkUI();
+            // 시각적 피드백
+            const $btn = $(this);
+            $btn.css('transform', 'rotate(360deg)').css('transition', 'transform 0.5s');
+            setTimeout(() => { $btn.css('transform', '').css('transition', ''); }, 500);
+        });
 
-        
+        // [신규] 연동 목록 토글 버튼
+        $('#toggle-linked-list-btn').on('click', function() {
+            const $list = $('#linked-char-list-container');
+            if ($list.is(':visible')) {
+                $list.slideUp(200);
+                $(this).text('📋 연동된 모든 캐릭터 목록 관리 (열기)');
+            } else {
+                renderAllLinkedPresetsList(); // 열 때 최신화
+                $list.slideDown(200);
+                $(this).text('📋 연동된 모든 캐릭터 목록 관리 (닫기)');
+            }
+        });
+        // 탭이 'presets'일 때 연동 UI 갱신 (탭 클릭 이벤트 내부가 아니라, loadSettingsUI 호출 시점 등에서 처리되도록 아래에 추가)
+        $('#avatar-popups-menu-content .main-nav-item[data-tab="tab-presets"]').on('click', function() {
+            renderCharacterLinkUI();
+        });
+        const originalLoadSettingsUI = loadSettingsUI;
+        loadSettingsUI = function() {
+            originalLoadSettingsUI();
+            renderCharacterLinkUI();
+        };
         loadSettingsUI();
         
     } catch (error) {
