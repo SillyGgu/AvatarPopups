@@ -1,7 +1,10 @@
 import {
     eventSource,
     event_types,
-    saveSettingsDebounced
+    saveSettingsDebounced,
+    characters,
+    this_chid,
+    getThumbnailUrl
 } from '../../../../script.js';
 
 import { 
@@ -9,12 +12,6 @@ import {
     extension_settings,
     loadExtensionSettings
 } from '../../../extensions.js'; 
-
-import {
-    characters, 
-    this_chid,
-    getThumbnailUrl
-} from '../../../../script.js';
 
 import {
     user_avatar
@@ -34,18 +31,13 @@ let isAvatarDragging = false;
 
 const DEFAULT_SETTINGS = {
     enabled: true,
-    
     charEnabled: true,
     personaEnabled: true,
-
     ignoreClick: false, 
     autoPosAdjust: false, 
     isFloating: false, 
-    
-    
     ignoreCharClick: false,
     ignoreStickerClick: false,
-    
     
     initialViewport: { width: window.innerWidth, height: window.innerHeight },
 
@@ -94,8 +86,7 @@ if (!settings || Object.keys(settings).length === 0) {
     settings.personaConfig = Object.assign({}, DEFAULT_SETTINGS.personaConfig, settings.personaConfig);
     settings.presets = Object.assign({}, DEFAULT_SETTINGS.presets, settings.presets);
     settings.charConfig.imageAdjust = Object.assign({}, DEFAULT_SETTINGS.charConfig.imageAdjust, settings.charConfig.imageAdjust);
-    settings.personaConfig.imageAdjust = Object.assign({}, DEFAULT_SETTINGS.personaConfig.imageAdjust, settings.personaConfig.imageAdjust);
-    
+    settings.personaConfig.imageAdjust = Object.assign({}, DEFAULT_SETTINGS.personaConfig.imageAdjust, settings.personaConfig.imageAdjust); 
     
     if (Array.isArray(settings.activeStickers)) {
         settings.activeStickers.forEach(sticker => {
@@ -104,6 +95,9 @@ if (!settings || Object.keys(settings).length === 0) {
             }
             if (sticker.zIndex === undefined) {
                 sticker.zIndex = 1000; 
+            }
+            if (sticker.opacity === undefined) {
+                sticker.opacity = 1;
             }
         });
     }
@@ -161,9 +155,6 @@ function adjustPosBasedOnViewport() {
     });
 }
 
-
-
-
 let resizeTimer;
 const resizeHandler = () => {
     clearTimeout(resizeTimer);
@@ -171,7 +162,6 @@ const resizeHandler = () => {
         adjustPosBasedOnViewport();
     }, 100); 
 };
-
 
 function startAutoPosAdjustment() {
     if (!settings.autoPosAdjust) return;
@@ -182,15 +172,11 @@ function startAutoPosAdjustment() {
         height: window.innerHeight
     };
     
-    
     $(window).on('resize.AvatarPopups', resizeHandler);
     
-    
     adjustPosBasedOnViewport();
-    
     saveSettingsDebounced(); 
 }
-
 
 function stopAutoPosAdjustment() {
     $(window).off('resize.AvatarPopups');
@@ -202,11 +188,11 @@ function toggleFloating(isEnabled) {
     const $personaPopup = $('#persona-avatar-popup');
 
     if (isEnabled) {
-        $charPopup.addClass('floating-char');
-        $personaPopup.addClass('floating-persona');
+        $charPopup.addClass('floating-char').css('position', 'fixed');
+        $personaPopup.addClass('floating-persona').css('position', 'fixed');
     } else {
-        $charPopup.removeClass('floating-char');
-        $personaPopup.removeClass('floating-persona');
+        $charPopup.removeClass('floating-char').css('position', 'fixed');
+        $personaPopup.removeClass('floating-persona').css('position', 'fixed');
     }
 }
 
@@ -263,9 +249,6 @@ function applyPosToPopup(type) {
         adjustPosBasedOnViewport();
     }
 
-
-    
-    
     if ($popup.data('ui-draggable')) {
         $popup.draggable('destroy');
     }
@@ -293,19 +276,17 @@ function applyPosToPopup(type) {
                 top: ui.position.top,
                 left: ui.position.left
             };
-            
-            
             settings.initialViewport = {
                 width: window.innerWidth,
                 height: window.innerHeight
             };
-            
             saveSettingsDebounced();
         }
     });
+
+    // draggable 재초기화 후 floating 상태 복원
+    toggleFloating(settings.isFloating);
 }
-
-
 
 function renderActiveStickers() {
     
@@ -327,23 +308,53 @@ function renderActiveStickers() {
 
             $('body').append($popup);
             
-            
             $popup.css({
                 top: activeSticker.top + 'px',
                 left: activeSticker.left + 'px',
                 transform: `rotate(${activeSticker.rotation || 0}deg)`,
                 width: `${activeSticker.width || 100}px`, 
                 height: `${activeSticker.height || 100}px`, 
-                'z-index': activeSticker.zIndex || 1000 
+                'z-index': activeSticker.zIndex || 1000,
+                'opacity': activeSticker.opacity !== undefined ? activeSticker.opacity : 1
             });
-            
             
             const flipTransform = activeSticker.isFlipped ? 'scaleX(-1)' : 'none';
             $popup.find('img').css('transform', flipTransform);
             
-            
-            $popup.on('click', onStickerPopupClick);
-            
+            $popup.on('click', function(event) {
+                const $img = $(this).find('img')[0];
+                if (!$img || !$img.complete) {
+                    onStickerPopupClick.call(this, event);
+                    return;
+                }
+
+                const rect = $img.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const clickY = event.clientY - rect.top;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = $img.naturalWidth || $img.width;
+                canvas.height = $img.naturalHeight || $img.height;
+                const ctx = canvas.getContext('2d');
+
+                try {
+                    ctx.drawImage($img, 0, 0, canvas.width, canvas.height);
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const pixelX = Math.floor(clickX * scaleX);
+                    const pixelY = Math.floor(clickY * scaleY);
+                    const pixel = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+                    const alpha = pixel[3];
+
+                    if (alpha < 10) {
+                        return; // 투명 영역 클릭 무시
+                    }
+                } catch (e) {
+                    // CORS 문제 등으로 canvas 읽기 실패 시 그냥 통과
+                }
+
+                onStickerPopupClick.call(this, event);
+            });
             
             $popup.find('.sticker-flip-btn').on('click', function(e) {
                 e.stopPropagation(); 
@@ -361,8 +372,6 @@ function renderActiveStickers() {
                     removeStickerFromCanvas(popupId);
                 }
             });
-
-            
             $popup.draggable({
                 containment: false, 
                 scroll: false,
@@ -384,13 +393,11 @@ function renderActiveStickers() {
                                 height: window.innerHeight
                             };
                         }
-                        
                         saveSettingsDebounced();
                     }
                 }
             });
-            
-            
+
             $popup.on('contextmenu', function(e) {
                  e.preventDefault();
                  if(confirm(`스티커 [${savedSticker.name}]을(를) 캔버스에서 제거하시겠습니까?`)) {
@@ -399,8 +406,6 @@ function renderActiveStickers() {
             });
         }
     });
-    
-    
     toggleClickIgnore(settings.ignoreClick);
     togglePopups(settings.enabled);
 }
@@ -423,7 +428,6 @@ function toggleStickerFlip(popupId) {
     saveSettingsDebounced();
 }
 
-
 function removeStickerFromCanvas(popupId) {
     settings.activeStickers = settings.activeStickers.filter(s => s.popupId !== popupId);
     $(`#${popupId}`).remove();
@@ -431,12 +435,10 @@ function removeStickerFromCanvas(popupId) {
     saveSettingsDebounced();
 }
 
-
 function renderStickerList(searchQuery = '') {
     const $container = $('#sticker-list-container-settings');
     $container.empty();
     
-    // 이동 모드일 경우 컨테이너에 클래스 추가
     if (isStickerMovingMode) {
         $container.addClass('sticker-list-moving-mode');
     } else {
@@ -445,7 +447,6 @@ function renderStickerList(searchQuery = '') {
 
     const query = searchQuery.trim().toLowerCase();
     
-    // 필터링
     const filteredStickers = settings.savedStickers.filter(sticker => {
         const matchQuery = !query || sticker.name.toLowerCase().includes(query);
         const matchFolder = (currentSelectedFolder === '전체') || (sticker.folder === currentSelectedFolder);
@@ -464,7 +465,6 @@ function renderStickerList(searchQuery = '') {
     }
 
     filteredStickers.forEach(sticker => { 
-        // [수정] 현재 선택된 스티커라면 클래스 추가
         const isSelected = selectedStickersForMove.has(sticker.id);
         const selectedClass = isSelected ? 'selected' : '';
 
@@ -491,13 +491,9 @@ function renderStickerList(searchQuery = '') {
         $container.find('.sticker-name-area').on('click', onStickerItemClickToEdit); 
         $container.find('.sticker-item-content').on('dblclick', onDeleteStickerFromList); 
     } else {
-        // 이동 모드일 때는 클릭 시 다중 선택 로직 실행
         $container.find('.sticker-item').on('click', onStickerMoveClick);
     }
 }
-
-
-
 
 function loadSettingsUI() {
     $('#avatar_popups_enable_toggle').prop('checked', settings.enabled);
@@ -539,7 +535,6 @@ function loadSettingsUI() {
         applyPosToPopup(type);
     });
     
-    // 설정 로드 시 기존 스티커에 폴더 정보가 없다면 '기본'으로 할당 & 폴더 목록 초기화
     if (!settings.stickerFolders) {
         settings.stickerFolders = ['전체', '기본'];
     }
@@ -547,17 +542,16 @@ function loadSettingsUI() {
         if (!s.folder) s.folder = '기본';
     });
 
-    renderStickerFolders(); // 폴더 탭 렌더링
-    renderStickerList();    // 스티커 목록 렌더링
+    renderStickerFolders(); 
+    renderStickerList();   
     renderActiveStickers(); 
 
-    
     renderPresetList();
     updatePresetButtons();
-    
-    
+
     toggleClickIgnore(settings.ignoreClick);
     toggleFloating(settings.isFloating);
+    renderCharacterLinkUI();
 }
 
 
@@ -577,8 +571,7 @@ function onStickerItemClickToEdit(e) {
     
     const originalName = savedSticker.name;
     const originalLink = savedSticker.link;
-    
-    
+
     const newCombinedValue = prompt(
         `스티커 [${originalName}] 의 이름 및 링크를 수정합니다.\n\n` +
         `[현재 이름]: ${originalName}\n` + 
@@ -814,41 +807,33 @@ function onTabClick() {
 }
 function renderStickerFolders() {
     const $container = $('#sticker-folder-container');
-    // '+' 버튼(마지막 요소)을 제외하고 탭 제거
     $container.find('.sticker-folder-tab').remove();
 
     settings.stickerFolders.forEach(folderName => {
         const isActive = (folderName === currentSelectedFolder) ? 'active' : '';
-        // '전체'와 '기본'은 삭제 불가, 나머지는 우클릭 등으로 삭제/이름변경 고려 가능(여기선 단순화)
         const tabHtml = `<div class="sticker-folder-tab ${isActive}" data-folder="${folderName}">${folderName}</div>`;
         
-        // + 버튼 앞에 삽입
         $('#add-sticker-folder-btn').before(tabHtml);
     });
 
-    // 이벤트 연결
     $('.sticker-folder-tab').off('click').on('click', function() {
         const folder = $(this).data('folder');
         currentSelectedFolder = folder;
-        renderStickerFolders(); // 탭 활성화 상태 갱신
-        renderStickerList($('#sticker-search-input').val()); // 리스트 갱신
+        renderStickerFolders(); 
+        renderStickerList($('#sticker-search-input').val()); 
     });
 
-    // 폴더 탭 우클릭 시 삭제/이름변경 (전체, 기본 제외)
     $('.sticker-folder-tab').on('contextmenu', function(e) {
         e.preventDefault();
         const folder = $(this).data('folder');
         if (folder === '전체' || folder === '기본') return;
 
         if (confirm(`폴더 [${folder}]를 삭제하시겠습니까?\n(내부의 스티커는 '기본' 폴더로 이동됩니다)`)) {
-            // 내부 스티커 이동
             settings.savedStickers.forEach(s => {
                 if (s.folder === folder) s.folder = '기본';
             });
-            // 폴더 삭제
             settings.stickerFolders = settings.stickerFolders.filter(f => f !== folder);
             
-            // 현재 보고 있던 폴더가 삭제되면 '전체'로 이동
             if (currentSelectedFolder === folder) currentSelectedFolder = '전체';
             
             saveSettingsDebounced();
@@ -872,7 +857,6 @@ function onAddFolder() {
     settings.stickerFolders.push(trimmed);
     saveSettingsDebounced();
     
-    // 새 폴더로 바로 이동
     currentSelectedFolder = trimmed;
     renderStickerFolders();
     renderStickerList();
@@ -889,13 +873,10 @@ function onManageFolders() {
 
 function onCloseManageFolders() {
     $('#folder-manager-modal-overlay').hide();
-    // 탭 UI 갱신 (순서나 이름이 바뀌었을 수 있으므로)
-    renderStickerFolders();
-    // 만약 현재 보고 있던 폴더가 삭제되었거나 이름이 바뀌었을 수 있으므로 목록도 갱신
     if (!settings.stickerFolders.includes(currentSelectedFolder)) {
         currentSelectedFolder = '전체';
     }
-    renderStickerFolders(); // 탭 활성화 상태 재갱신
+    renderStickerFolders();
     renderStickerList($('#sticker-search-input').val());
 }
 
@@ -922,7 +903,6 @@ function renderFolderManagerList() {
             </div>
         `);
 
-        // 이벤트 바인딩
         if (!isAll) {
             $item.find('.move-up-btn').on('click', () => moveFolderOrder(index, -1));
             $item.find('.move-down-btn').on('click', () => moveFolderOrder(index, 1));
@@ -938,10 +918,8 @@ function renderFolderManagerList() {
 
 function moveFolderOrder(index, direction) {
     const targetIndex = index + direction;
-    // 범위 체크 ('전체'는 0번 인덱스 고정이므로 0번으로 이동하거나 0번을 이동시키려 하면 차단)
     if (targetIndex <= 0 || targetIndex >= settings.stickerFolders.length) return;
 
-    // 배열 순서 교체
     const temp = settings.stickerFolders[index];
     settings.stickerFolders[index] = settings.stickerFolders[targetIndex];
     settings.stickerFolders[targetIndex] = temp;
@@ -963,17 +941,14 @@ function renameFolder(index) {
         return;
     }
 
-    // 1. 폴더 배열 이름 수정
     settings.stickerFolders[index] = trimmed;
 
-    // 2. 해당 폴더에 속해있던 스티커들의 folder 속성 일괄 업데이트
     settings.savedStickers.forEach(sticker => {
         if (sticker.folder === oldName) {
             sticker.folder = trimmed;
         }
     });
 
-    // 현재 보고 있는 폴더였다면 변수 업데이트
     if (currentSelectedFolder === oldName) {
         currentSelectedFolder = trimmed;
     }
@@ -993,7 +968,6 @@ function deleteFolder(index) {
         return;
     }
 
-    // 1. 스티커 이동 처리
     let movedCount = 0;
     settings.savedStickers.forEach(sticker => {
         if (sticker.folder === folderName) {
@@ -1002,10 +976,8 @@ function deleteFolder(index) {
         }
     });
 
-    // 2. 폴더 배열에서 삭제
     settings.stickerFolders.splice(index, 1);
 
-    // 현재 보고 있던 폴더가 삭제되면 '전체'로 이동
     if (currentSelectedFolder === folderName) {
         currentSelectedFolder = '전체';
     }
@@ -1017,24 +989,22 @@ function deleteFolder(index) {
 // -------------------------------------------------------
 
 function onToggleStickerEditMode() {
-    // [수정] 이미 이동 모드이고, 선택된 스티커가 있다면 -> 모달 띄우기 (모드 종료 X)
     if (isStickerMovingMode && selectedStickersForMove.size > 0) {
         showFolderSelectionModal();
         return;
     }
 
-    // 그 외(일반 토글 혹은 선택 없이 완료 누름)
     isStickerMovingMode = !isStickerMovingMode;
     const $btn = $('#toggle-sticker-edit-mode-btn');
     
     if (isStickerMovingMode) {
-        selectedStickersForMove.clear(); // 모드 진입 시 선택 초기화
+        selectedStickersForMove.clear(); 
         $btn.addClass('active');
         $btn.html('💾 완료'); 
         $('#sticker-move-instruction').text('(스티커를 클릭해 선택 후, 완료 버튼을 누르세요)').show();
         $('#sticker-search-input').prop('disabled', true);
     } else {
-        selectedStickersForMove.clear(); // 모드 종료 시 선택 초기화
+        selectedStickersForMove.clear(); 
         $btn.removeClass('active');
         $btn.html('✏️');
         $('#sticker-move-instruction').hide();
@@ -1051,7 +1021,6 @@ function onStickerMoveClick(e) {
     const $item = $(this);
     const stickerId = parseInt($item.data('id'));
     
-    // 선택 토글 로직
     if (selectedStickersForMove.has(stickerId)) {
         selectedStickersForMove.delete(stickerId);
         $item.removeClass('selected');
@@ -1060,7 +1029,6 @@ function onStickerMoveClick(e) {
         $item.addClass('selected');
     }
 
-    // 안내 메시지 업데이트
     const count = selectedStickersForMove.size;
     if (count > 0) {
         $('#sticker-move-instruction').text(`(${count}개 선택됨 - 완료 버튼을 눌러 이동)`);
@@ -1074,13 +1042,8 @@ function showFolderSelectionModal() {
     const $modalOverlay = $('#sticker-move-modal-overlay');
     const $listArea = $('#sticker-move-folder-list-area');
     
-    // 선택된 개수 메시지
     $('#sticker-move-count-msg').text(`총 ${selectedStickersForMove.size}개의 스티커를 어디로 옮길까요?`);
-    
-    // 폴더 목록 버튼 생성
     $listArea.empty();
-    
-    // '전체'는 이동 대상이 아니므로 제외
     const targetFolders = settings.stickerFolders.filter(f => f !== '전체');
 
     targetFolders.forEach(folderName => {
@@ -1089,9 +1052,8 @@ function showFolderSelectionModal() {
         $listArea.append(btn);
     });
 
-    $modalOverlay.css('display', 'flex'); // 모달 보이기
+    $modalOverlay.css('display', 'flex'); 
     
-    // 취소 버튼 이벤트 연결 (한번만)
     $('#close-sticker-move-modal-btn').off('click').on('click', closeFolderSelectionModal);
 }
 
@@ -1117,17 +1079,12 @@ function executeBatchMove(targetFolder) {
     saveSettingsDebounced();
     
     alert(`${moveCount}개의 스티커를 [${targetFolder}] 폴더로 이동했습니다.`);
-    
-    // 정리 작업
+
     selectedStickersForMove.clear();
     closeFolderSelectionModal();
-    
-    // 편집 모드 종료
+
     onToggleStickerEditMode(); 
-    
-    // UI 갱신 (현재 폴더가 바뀌었을 수 있으므로 목록 다시 그리기)
-    // 만약 이동한 폴더로 바로 보여주고 싶다면 currentSelectedFolder = targetFolder; 추가 가능
-    // 여기선 기존 뷰 유지
+
     renderStickerFolders(); 
     renderStickerList($('#sticker-search-input').val());
 }
@@ -1140,7 +1097,6 @@ function onSaveNewSticker() {
         return;
     }
     
-    // [수정됨] 현재 선택된 폴더가 '전체'라면 '기본'에, 아니면 해당 폴더에 저장
     const targetFolder = (currentSelectedFolder === '전체') ? '기본' : currentSelectedFolder;
 
     settings.stickerCounter++;
@@ -1148,7 +1104,7 @@ function onSaveNewSticker() {
         id: settings.stickerCounter,
         name: name,
         link: link,
-        folder: targetFolder // 폴더 정보 저장
+        folder: targetFolder 
     });
 
     
@@ -1163,11 +1119,74 @@ function onSaveNewSticker() {
     alert(`[${targetFolder}] 폴더에 저장되었습니다.`);
 }
 
+function onSaveBulkStickers() {
+    const raw = $('#sticker-bulk-input').val();
+    const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    if (lines.length === 0) {
+        alert('입력된 내용이 없습니다.');
+        return;
+    }
+
+    const targetFolder = (currentSelectedFolder === '전체') ? '기본' : currentSelectedFolder;
+    let successCount = 0;
+    let failLines = [];
+
+    lines.forEach((line, idx) => {
+        const pipeIdx = line.indexOf('|');
+        if (pipeIdx === -1) {
+            failLines.push(`${idx + 1}번째 줄: 구분자(|) 없음`);
+            return;
+        }
+        const name = line.substring(0, pipeIdx).trim();
+        const link = line.substring(pipeIdx + 1).trim();
+
+        if (!name || !link) {
+            failLines.push(`${idx + 1}번째 줄: 이름 또는 링크 비어있음`);
+            return;
+        }
+
+        settings.stickerCounter++;
+        settings.savedStickers.push({
+            id: settings.stickerCounter,
+            name: name,
+            link: link,
+            folder: targetFolder
+        });
+        successCount++;
+    });
+
+    saveSettingsDebounced();
+    renderStickerList($('#sticker-search-input').val());
+
+    $('#sticker-bulk-input').val('');
+    $('#sticker-bulk-preview').text('');
+
+    let msg = `✅ ${successCount}개 스티커가 [${targetFolder}] 폴더에 저장되었습니다.`;
+    if (failLines.length > 0) {
+        msg += `\n\n⚠️ 저장 실패 (${failLines.length}개):\n` + failLines.join('\n');
+    }
+    alert(msg);
+}
+
+function onReloadPopups() {
+    const $btn = $('#reload-popups-btn');
+    $btn.text('⏳').prop('disabled', true);
+
+    // 기존 팝업 제거 후 재생성
+    $('#char-avatar-popup, #persona-avatar-popup').remove();
+    $('.sticker-popup').remove();
+
+    setTimeout(() => {
+        initializePopups();
+        renderActiveStickers();
+        $btn.text('↺').prop('disabled', false);
+    }, 300);
+}
 
 function onAddStickerToCanvas() {
     const stickerId = parseInt($(this).data('id'));
     const uniquePopupId = `sticker-${stickerId}-${Date.now()}`;
-    
     
     settings.activeStickers.push({
         stickerId: stickerId,
@@ -1177,7 +1196,8 @@ function onAddStickerToCanvas() {
         height: 100, 
         rotation: 0,
         isFlipped: false, 
-        zIndex: 1000, 
+        zIndex: 1000,
+        opacity: 1,
         popupId: uniquePopupId 
     });
     
@@ -1295,6 +1315,9 @@ function updateStickerConfig(popupId, key, value) {
         } else if (key === 'zIndex') { 
             settings.activeStickers[activeStickerIndex].zIndex = value;
             $popup.css('z-index', value);
+        } else if (key === 'opacity') {
+            settings.activeStickers[activeStickerIndex].opacity = value;
+            $popup.css('opacity', value);
         }
     }
     
@@ -1326,6 +1349,11 @@ function createStickerConfigPanel() {
                 <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">레이어 순서 (Z-index)</label>
                 <input type="number" id="sticker-zindex-input" class="sticker-config-input" data-key="zIndex" placeholder="1000" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px;">
             </div>
+
+            <div class="control-group">
+                <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">불투명도 (<span id="sticker-opacity-value-display">100</span>%)</label>
+                <input type="range" id="sticker-opacity-input" class="sticker-config-input" data-key="opacity" min="0" max="1" step="0.01" style="width: 100%; margin-bottom: 10px;">
+            </div>
         </div>
     `;
 
@@ -1352,14 +1380,22 @@ function createStickerConfigPanel() {
 
         const $input = $(this);
         const key = $input.data('key');
+
+        if (key === 'opacity') {
+            let value = parseFloat($input.val());
+            if (isNaN(value)) value = 1;
+            value = Math.min(1, Math.max(0, value));
+            $('#sticker-opacity-value-display').text(Math.round(value * 100));
+            updateStickerConfig(currentEditingStickerPopupId, key, value);
+            return;
+        }
+
         let value = parseInt($input.val());
         
         if (isNaN(value)) {
-            
             value = (key === 'width' || key === 'height') ? 10 : 0;
         }
 
-        
         if (key === 'width') { 
             value = Math.max(10, value);
         }
@@ -1376,12 +1412,13 @@ function showStickerConfigPanel(activeSticker) {
     
     const $panel = $('#sticker-config-panel');
 
-    
     $('#sticker-size-input').val(activeSticker.width);
     $('#sticker-rotation-input').val(activeSticker.rotation);
-    
     $('#sticker-zindex-input').val(activeSticker.zIndex || 1000);
     
+    const opacityVal = activeSticker.opacity !== undefined ? activeSticker.opacity : 1;
+    $('#sticker-opacity-input').val(opacityVal);
+    $('#sticker-opacity-value-display').text(Math.round(opacityVal * 100));
     
     if (stickerPanelPos.top === -1 || stickerPanelPos.left === -1) {
         
@@ -1518,12 +1555,8 @@ function createAvatarConfigPanel() {
             avatarPanelPos.left = ui.position.left;
         }
     });
-    
-    
-    $('#close-avatar-config-btn').on('click', hideAvatarConfigPanel);
-    
 
-	
+    $('#close-avatar-config-btn').on('click', hideAvatarConfigPanel);
     
     $('.avatar-adjust-input').on('input', function() {
         if (!currentEditingAvatarType) return;
@@ -1536,27 +1569,22 @@ function createAvatarConfigPanel() {
             value = (key === 'zoom') ? 1 : 0;
         }
         
-        
         if ($input.is('[type="range"]')) {
             $(`#avatar-adjust-${key}-input`).val(value);
         } else {
             $(`#avatar-adjust-${key}-slider`).val(value);
         }
         
-        
         settings[`${currentEditingAvatarType}Config`].imageAdjust[key] = value;
-        
         applyConfigToPopup(currentEditingAvatarType);
         saveSettingsDebounced();
     });
-    
     
     $('#avatar-adjust-reset-btn').on('click', function() {
         if (!currentEditingAvatarType) return;
         
         const defaultConfig = DEFAULT_SETTINGS.charConfig.imageAdjust; 
         settings[`${currentEditingAvatarType}Config`].imageAdjust = JSON.parse(JSON.stringify(defaultConfig));
-        
         
         $('#avatar-adjust-zoom-slider, #avatar-adjust-zoom-input').val(defaultConfig.zoom);
         $('#avatar-adjust-rotation-slider, #avatar-adjust-rotation-input').val(defaultConfig.rotation);
@@ -1573,27 +1601,22 @@ function createAvatarConfigPanel() {
 	$('#avatar-config-panel').on('click', '.dpad-btn', function() {
 		if (!currentEditingAvatarType) return;
 		const $btn = $(this);
-		const axis = $btn.data('axis'); // 'x' 또는 'y'
-		const dir = parseInt($btn.data('val')); // -1 (상/좌) 또는 1 (하/우)
+		const axis = $btn.data('axis'); 
+		const dir = parseInt($btn.data('val'));
 		
-		// 이동량 설정값 가져오기 (기본값 5. 픽셀 조정을 위해 * 2)
 		const step = (parseInt($('#avatar-adjust-dpad-step').val()) || 5) * 2; 
 		
-		// 현재 설정 가져오기
 		let config = settings[`${currentEditingAvatarType}Config`];
 		if (!config.imageAdjust) {
 			config.imageAdjust = { x: 0, y: 0, zoom: 1, rotation: 0 };
 		}
 		
-		let currentVal = config.imageAdjust[axis] || 0; // x 또는 y 값
+		let currentVal = config.imageAdjust[axis] || 0;
 		
-        // X축 (좌우) 또는 Y축 (상하) 값만 변경합니다.
 		if (axis === 'y' || axis === 'x') {
 			currentVal += dir * step; 
 		}
 		
-		// 값 저장 및 적용 (축에 해당하는 값만 변경합니다)
-        // 이 로직은 imageAdjust.zoom 값을 건드리지 않습니다.
 		settings[`${currentEditingAvatarType}Config`].imageAdjust[axis] = currentVal; 
 		applyConfigToPopup(currentEditingAvatarType); 
 		saveSettingsDebounced();
@@ -1713,7 +1736,6 @@ function applyPreset(presetName) {
     return true;
 }
 
-// [기존 수정] 버튼 클릭 시 프리셋 로드
 function onLoadPreset() {
     const presetName = $('#preset-select-dropdown').val();
     
@@ -1723,25 +1745,18 @@ function onLoadPreset() {
     }
 }
 
-// 캐릭터 변경 시 연동된 프리셋 확인 및 자동 로드
 function checkAndLoadCharacterPreset() {
     if (!settings.enabled || !this_chid || !characters[this_chid]) return;
 
     const currentCharacter = characters[this_chid];
-    // 캐릭터 식별자로 avatar 파일명을 사용 (이름은 중복될 수 있으므로)
     const charId = currentCharacter.avatar; 
     
-    // 연동된 프리셋이 있는지 확인
     if (settings.linkedPresets && settings.linkedPresets[charId]) {
         const targetPresetName = settings.linkedPresets[charId];
         
-        // 해당 프리셋이 실제로 존재하는지 확인
         if (settings.presets[targetPresetName]) {
             console.log(`[AvatarPopups] Auto-loading preset '${targetPresetName}' for character '${currentCharacter.name}'`);
             applyPreset(targetPresetName);
-            // 자동 로드 후에는 저장을 바로 하지 않아도 되지만, 
-            // 현재 상태 유지를 위해 저장하고 싶다면 아래 주석 해제
-            // saveSettingsDebounced();
         }
     }
 }
@@ -1765,8 +1780,6 @@ function onExportPreset() {
     const includeLinks = $('#preset-include-links-toggle').is(':checked');
     const presetData = settings.presets[presetName];
 
-    // 1. 프리셋에 사용된 스티커들의 정의(Definition)를 추출합니다.
-    // 받는 사람에게는 해당 스티커 ID가 없을 수 있으므로, 이름과 링크 정보를 함께 포장해야 합니다.
     const usedStickerIds = new Set();
     if (presetData.activeStickers) {
         presetData.activeStickers.forEach(s => usedStickerIds.add(s.stickerId));
@@ -1777,15 +1790,13 @@ function onExportPreset() {
         const found = settings.savedStickers.find(s => s.id === id);
         if (found) {
             stickerDefinitions.push({
-                originalId: id, // 매핑용 임시 ID
+                originalId: id, 
                 name: found.name,
-                // 링크 포함 옵션이 꺼져있으면 빈 문자열로 내보냄 (신상 보호)
                 link: includeLinks ? found.link : "" 
             });
         }
     });
 
-    // 2. 내보낼 최종 데이터 구조 생성
     const exportObject = {
         meta: {
             version: "1.0",
@@ -1793,11 +1804,10 @@ function onExportPreset() {
             includeLinks: includeLinks
         },
         name: presetName,
-        presetSettings: presetData, // 위치, 크기 등
-        stickers: stickerDefinitions // 스티커 정보 (이름, 링크)
+        presetSettings: presetData,
+        stickers: stickerDefinitions 
     };
 
-    // 3. JSON 파일로 다운로드 트리거
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObject, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -1812,7 +1822,6 @@ function onExportPreset() {
 // -----------------------------------------------------------------
 
 function renderCharacterLinkUI() {
-    // [수정됨] 현재 선택된 캐릭터 정보 가져오기 로직 강화
     if (typeof this_chid === 'undefined' || this_chid === undefined || !characters[this_chid]) {
         $('#char-link-info-area').html('<span style="color: #999;">캐릭터 정보를 찾을 수 없습니다.<br>(채팅방에 입장해 있나요?)</span>');
         $('#save-char-link-btn').prop('disabled', true);
@@ -1825,18 +1834,16 @@ function renderCharacterLinkUI() {
     const charName = currentCharacter.name;
     const linkedPreset = settings.linkedPresets ? settings.linkedPresets[charId] : null;
 
-    // UI 텍스트 업데이트
     let statusHtml = `<strong>현재 캐릭터:</strong> ${charName}<br>`;
     
     if (linkedPreset && settings.presets[linkedPreset]) {
         statusHtml += `<strong>연동된 프리셋:</strong> <span style="color: var(--accent-color);">${linkedPreset}</span>`;
         $('#remove-char-link-btn').prop('disabled', false);
         
-        // 편의성: 이미 연동된게 있다면 드롭다운도 맞춰줍니다.
         const $dropdown = $('#preset-select-dropdown');
         if ($dropdown.val() !== linkedPreset) {
              $dropdown.val(linkedPreset);
-             updatePresetButtons(); // 버튼 상태 갱신
+             updatePresetButtons();
         }
     } else {
         statusHtml += `<strong>연동 상태:</strong> <span style="color: #999;">없음 (프리셋 선택 후 '연동 저장' 클릭)</span>`;
@@ -1846,11 +1853,9 @@ function renderCharacterLinkUI() {
     $('#char-link-info-area').html(statusHtml);
     $('#save-char-link-btn').prop('disabled', false);
     
-    // 전체 목록도 갱신 (리스트가 열려있을 수 있으므로)
     renderAllLinkedPresetsList();
 }
 
-// 연동된 모든 캐릭터 목록 렌더링
 function renderAllLinkedPresetsList() {
     const $container = $('#linked-char-list-container');
     $container.empty();
@@ -1860,8 +1865,6 @@ function renderAllLinkedPresetsList() {
         return;
     }
 
-    // 캐릭터 이름 매핑을 위해 characters 배열을 순회하여 맵 생성 (ID -> Name)
-    // 캐릭터가 삭제되었을 수도 있으므로, avatar 파일명을 기준으로 매칭 시도
     const avatarToNameMap = {};
     if (Array.isArray(characters)) {
         characters.forEach(c => {
@@ -1871,7 +1874,6 @@ function renderAllLinkedPresetsList() {
 
     Object.keys(settings.linkedPresets).forEach(avatarFile => {
         const presetName = settings.linkedPresets[avatarFile];
-        // 캐릭터 이름이 있으면 이름, 없으면 파일명 표시
         const displayName = avatarToNameMap[avatarFile] || `(삭제됨/미확인) ${avatarFile}`;
 
         const itemHtml = `
@@ -1888,11 +1890,9 @@ function renderAllLinkedPresetsList() {
         $container.append(itemHtml);
     });
 
-    // 동적 생성된 삭제 버튼에 이벤트 연결
     $container.find('.delete-link-btn').on('click', onDeleteLinkedChar);
 }
 
-// 목록에서 연동 삭제
 function onDeleteLinkedChar() {
     const avatarFile = $(this).data('avatar');
     if (!avatarFile) return;
@@ -1901,7 +1901,6 @@ function onDeleteLinkedChar() {
         delete settings.linkedPresets[avatarFile];
         saveSettingsDebounced();
         
-        // UI 갱신 (현재 보고 있는 캐릭터일 수도 있으므로 둘 다 갱신)
         renderCharacterLinkUI();
         renderAllLinkedPresetsList();
     }
@@ -1922,7 +1921,6 @@ function onSaveCharLink() {
     const currentCharacter = characters[this_chid];
     const charId = currentCharacter.avatar;
 
-    // 연동 정보 저장
     if (!settings.linkedPresets) settings.linkedPresets = {};
     settings.linkedPresets[charId] = presetName;
 
@@ -1962,7 +1960,6 @@ function onImportPresetFile(event) {
             console.error(err);
             alert('프리셋 파일을 읽는 중 오류가 발생했습니다. 올바른 JSON 파일인지 확인해주세요.');
         }
-        // input 초기화 (같은 파일 다시 선택 가능하게)
         event.target.value = '';
     };
     reader.readAsText(file);
@@ -1972,7 +1969,6 @@ function onImportPresetFile(event) {
 // 불러온 데이터 로직 처리 (ID 매핑 및 병합)
 // -----------------------------------------------------------------
 function processImportedPreset(data) {
-    // 유효성 검사
     if (!data.presetSettings || !data.stickers) {
         alert('잘못된 프리셋 파일 형식입니다.');
         return;
@@ -1986,21 +1982,16 @@ function processImportedPreset(data) {
         return;
     }
 
-    const idMapping = {}; // { 가져온파일의ID : 내컴퓨터의실제ID }
+    const idMapping = {}; 
     const missingStickers = [];
 
-    // 1. 스티커 목록 동기화 (가장 중요한 부분)
     data.stickers.forEach(importedSticker => {
-        // A. 내 저장소에 같은 '이름'을 가진 스티커가 있는지 찾기
         let localSticker = settings.savedStickers.find(s => s.name === importedSticker.name);
 
         if (localSticker) {
-            // [경우 1] 이미 같은 이름의 스티커가 내 목록에 있음 -> 그 ID를 사용
             idMapping[importedSticker.originalId] = localSticker.id;
         } else {
-            // [경우 2] 내 목록에 없음
             if (importedSticker.link && importedSticker.link.trim() !== "") {
-                // 링크가 있으면 -> 새로 생성하여 저장
                 settings.stickerCounter++;
                 const newId = settings.stickerCounter;
                 
@@ -2012,45 +2003,37 @@ function processImportedPreset(data) {
                 
                 idMapping[importedSticker.originalId] = newId;
             } else {
-                // 링크가 없는데(보안상 제외됨) 내 목록에도 없음 -> 매핑 불가
                 missingStickers.push(importedSticker.name);
             }
         }
     });
 
-    // 2. 프리셋 데이터의 activeStickers가 사용하는 ID를 새 ID로 교체
     const newActiveStickers = [];
     if (data.presetSettings.activeStickers) {
         data.presetSettings.activeStickers.forEach(sticker => {
             const remappedId = idMapping[sticker.stickerId];
             if (remappedId) {
-                // ID 교체 후 추가
                 sticker.stickerId = remappedId;
-                // 혹시 모를 팝업 ID 충돌 방지 위해 갱신
                 sticker.popupId = `sticker-${remappedId}-${Date.now()}-${Math.floor(Math.random()*1000)}`;
                 newActiveStickers.push(sticker);
             }
         });
     }
 
-    // 3. 데이터 저장
     const finalPreset = data.presetSettings;
     finalPreset.activeStickers = newActiveStickers;
     settings.presets[newPresetName] = finalPreset;
 
-    // 4. UI 갱신 및 결과 알림
     saveSettingsDebounced();
     renderPresetList();
     renderStickerList($('#sticker-search-input').val()); 
     
-    // 완료 메시지
     let msg = `프리셋 [${newPresetName}] 가져오기 완료!`;
     if (missingStickers.length > 0) {
         msg += `\n\n⚠️ 다음 스티커는 링크가 없고 내 목록에도 없어 제외되었습니다:\n- ${missingStickers.join('\n- ')}`;
     }
     alert(msg);
     
-    // 바로 선택해드림
     $('#preset-select-dropdown').val(newPresetName).trigger('change');
 }
 function onResetPositions() {
@@ -2061,7 +2044,6 @@ function onResetPositions() {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // 1. 캐릭터 팝업 중앙 정렬
     const charWidth = settings.charConfig.width || 250;
     const charHeight = settings.charConfig.height || 350;
     
@@ -2070,25 +2052,23 @@ function onResetPositions() {
         left: (viewportWidth / 2) - (charWidth / 2)
     };
 
-    // 2. 페르소나 팝업 중앙 정렬 (약간 오른쪽으로 엇갈리게 하려면 left에 값을 더해도 됨. 여기선 정중앙 겹침 방지를 위해 약간 오프셋)
     const personaWidth = settings.personaConfig.width || 250;
     const personaHeight = settings.personaConfig.height || 350;
 
     settings.personaPos = {
         top: (viewportHeight / 2) - (personaHeight / 2),
-        left: (viewportWidth / 2) - (personaWidth / 2) + 20 // 20px 살짝 어긋나게
+        left: (viewportWidth / 2) - (personaWidth / 2) + 20 
     };
 
-    // 3. 화면의 스티커 모두 제거 (데이터에서도 삭제)
     settings.activeStickers = [];
     $('.sticker-popup').remove();
     hideStickerConfigPanel();
 
-    // 4. 적용
+    toggleFloating(settings.isFloating);
+
     applyPosToPopup('char');
     applyPosToPopup('persona');
     
-    // 기준 뷰포트도 갱신
     settings.initialViewport = { width: viewportWidth, height: viewportHeight };
 
     alert('초기화되었습니다.');
@@ -2106,7 +2086,6 @@ function updatePresetButtons() {
 
 
 function togglePopups(isEnabled) {
-    // 1. 전체 기능이 꺼져있으면 모두 숨김
     if (!isEnabled) {
         $('#char-avatar-popup').css('display', 'none');
         $('#persona-avatar-popup').css('display', 'none');
@@ -2114,25 +2093,20 @@ function togglePopups(isEnabled) {
         return;
     }
 
-    // 2. 전체 기능이 켜져있다면 개별 설정 확인
-    // 캐릭터 팝업
-    if (settings.charEnabled !== false) { // undefined일 경우(구버전 호환) true로 취급
+    if (settings.charEnabled !== false) { 
         $('#char-avatar-popup').css('display', '');
     } else {
         $('#char-avatar-popup').css('display', 'none');
     }
 
-    // 페르소나 팝업
     if (settings.personaEnabled !== false) {
         $('#persona-avatar-popup').css('display', '');
     } else {
         $('#persona-avatar-popup').css('display', 'none');
     }
     
-    // 스티커는 전체 설정(isEnabled)을 따름
     $('.sticker-popup').css('display', '');
 }
-
 
 function createPopup(id, title) {
     if ($(`#${id}`).length) return;
@@ -2148,20 +2122,8 @@ function createPopup(id, title) {
     const isChar = (id === 'char-avatar-popup');
     const type = isChar ? 'char' : 'persona';
     
-    
-    
-    
-    
-    
-    
-    
     applyConfigToPopup(type);
-    
-    
     applyPosToPopup(type); 
-    
-    
-    
 
     $popup.on('click', function(e) {
         
@@ -2206,14 +2168,11 @@ function initializePopups() {
     togglePopups(settings.enabled);
     updateAvatars();
 
-    // 캐릭터 변경 감지 이벤트
     $(document).on('change', '#character_select', () => {
-        // 이미지가 로드될 시간을 살짝 주고, 아바타 갱신 및 프리셋 자동 로드 실행
         setTimeout(() => {
             updateAvatars();
-            checkAndLoadCharacterPreset(); // [추가됨] 프리셋 자동 로드
+            checkAndLoadCharacterPreset(); 
             
-            // 설정창이 열려있다면 UI도 갱신
             if ($('#avatar-popups-menu-content').is(':visible')) {
                  renderCharacterLinkUI();
             }
@@ -2223,7 +2182,6 @@ function initializePopups() {
     eventSource.on(event_types.SETTINGS_UPDATED, updateAvatars);
     eventSource.on(event_types.CHAT_CHANGED, () => {
         updateAvatars();
-        // 채팅방이 바뀌었을 때도 캐릭터가 변경되었을 수 있으므로 체크
         setTimeout(checkAndLoadCharacterPreset, 200);
     });
 }
@@ -2257,6 +2215,32 @@ jQuery(async () => {
             $(this).text(isHidden ? '👆 스티커 정보 입력 창 닫기' : '새 스티커 팝업 저장 및 추가');
         });
         $('#save-new-sticker-btn').on('click', onSaveNewSticker);
+
+        // 단일/일괄 탭 전환
+        $('#sticker-input-tab-single').on('click', function() {
+            $('#sticker-single-panel').show();
+            $('#sticker-bulk-panel').hide();
+            $(this).css({ background: '#c2185b', color: '#fff' });
+            $('#sticker-input-tab-bulk').css({ background: '#f0e0ea', color: '#c2185b' });
+        });
+        $('#sticker-input-tab-bulk').on('click', function() {
+            $('#sticker-bulk-panel').show();
+            $('#sticker-single-panel').hide();
+            $(this).css({ background: '#c2185b', color: '#fff' });
+            $('#sticker-input-tab-single').css({ background: '#f0e0ea', color: '#c2185b' });
+        });
+
+        // 일괄 입력 실시간 미리보기
+        $('#sticker-bulk-input').on('input', function() {
+            const lines = $(this).val().split('\n').filter(l => l.trim().length > 0);
+            const valid = lines.filter(l => l.includes('|')).length;
+            $('#sticker-bulk-preview').text(lines.length > 0 ? `${lines.length}줄 입력됨 (유효: ${valid}개)` : '');
+        });
+
+        $('#save-bulk-sticker-btn').on('click', onSaveBulkStickers);
+
+        // 포카 새로고침
+        $('#reload-popups-btn').on('click', onReloadPopups);
         $('#add-sticker-folder-btn').on('click', onAddFolder);
         
         $('#manage-sticker-folders-btn').on('click', onManageFolders);
@@ -2268,34 +2252,26 @@ jQuery(async () => {
             renderStickerList(query);
         });
         $('.main-nav-item').on('click', function() {
-            // 1. 모든 탭 버튼 비활성화
             $('.main-nav-item').removeClass('active');
-            // 2. 현재 클릭한 탭 활성화
             $(this).addClass('active');
             
-            // 3. 탭 ID 가져오기
             const targetTabId = $(this).data('tab');
             
-            // 4. 모든 컨텐츠 숨기기
             $('.main-tab-content').removeClass('active');
-            // 5. 타겟 컨텐츠 보이기
             $('#' + targetTabId).addClass('active');
         });
         
         $('#save-preset-btn').on('click', onSavePreset);
         
         $('#reset-positions-btn').on('click', onResetPositions);
-        $('#save-preset-btn').on('click', onSavePreset);
         $('#load-preset-btn').on('click', onLoadPreset);
         $('#delete-preset-btn').on('click', onDeletePreset);
         $('#preset-select-dropdown').on('change', function() {
             updatePresetButtons();
-            // 내보내기 버튼 상태도 업데이트
             const selected = $(this).val();
             $('#export-preset-btn').prop('disabled', !selected);
         });
 
-        // 내보내기/불러오기 이벤트 연결
         $('#export-preset-btn').on('click', onExportPreset);
         $('#import-preset-btn').on('click', () => $('#import-preset-file-input').click());
         $('#import-preset-file-input').on('change', onImportPresetFile);
@@ -2303,33 +2279,47 @@ jQuery(async () => {
         $('#remove-char-link-btn').on('click', onRemoveCharLink);
         $('#refresh-char-info-btn').on('click', function() {
             renderCharacterLinkUI();
-            // 시각적 피드백
             const $btn = $(this);
             $btn.css('transform', 'rotate(360deg)').css('transition', 'transform 0.5s');
             setTimeout(() => { $btn.css('transform', '').css('transition', ''); }, 500);
         });
 
-        // 연동 목록 토글 버튼
         $('#toggle-linked-list-btn').on('click', function() {
             const $list = $('#linked-char-list-container');
             if ($list.is(':visible')) {
                 $list.slideUp(200);
                 $(this).text('📋 연동된 모든 캐릭터 목록 관리 (열기)');
             } else {
-                renderAllLinkedPresetsList(); // 열 때 최신화
+                renderAllLinkedPresetsList(); 
                 $list.slideDown(200);
                 $(this).text('📋 연동된 모든 캐릭터 목록 관리 (닫기)');
             }
         });
-        // 탭이 'presets'일 때 연동 UI 갱신 (탭 클릭 이벤트 내부가 아니라, loadSettingsUI 호출 시점 등에서 처리되도록 아래에 추가)
         $('#avatar-popups-menu-content .main-nav-item[data-tab="tab-presets"]').on('click', function() {
             renderCharacterLinkUI();
         });
-        const originalLoadSettingsUI = loadSettingsUI;
-        loadSettingsUI = function() {
-            originalLoadSettingsUI();
-            renderCharacterLinkUI();
-        };
+        // 스티커/포카 툴창 — 외부 클릭 시 자동 닫기
+        $(document).on('click.avatarPopupsDeselect', function(e) {
+            const $target = $(e.target);
+
+            // 툴창 자체, 스티커 팝업, 포카 팝업, 설정 패널 클릭이면 무시
+            const isInsidePanel = $target.closest('#sticker-config-panel, #avatar-config-panel').length > 0;
+            const isInsidePopup = $target.closest('.sticker-popup, #char-avatar-popup, #persona-avatar-popup').length > 0;
+            const isInsideSettings = $target.closest('.avatar-popups-settings').length > 0;
+
+            if (isInsidePanel || isInsidePopup || isInsideSettings) return;
+
+            // 스티커 툴창이 열려있으면 닫기
+            if ($('#sticker-config-panel').is(':visible')) {
+                hideStickerConfigPanel();
+            }
+
+            // 포카 툴창이 열려있으면 닫기
+            if ($('#avatar-config-panel').is(':visible')) {
+                hideAvatarConfigPanel();
+            }
+        });
+		
         loadSettingsUI();
         
     } catch (error) {
